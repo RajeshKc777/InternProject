@@ -1,0 +1,36 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+    <!-- Change Performance Tab -->
+    <div class="container" id="perfom_review">
+        <h3 class="text-center mb-4">Performance Reviews</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for review in allReviews %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ review.user.username }}</td>
+                        <td>{{ review.date|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <a href="{% url 'performance_details' review.id %}"> 
+                            <button class="btn btn-primary btn-sm">View Details</button> </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+{% endblock content %}
+

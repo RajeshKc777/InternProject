@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background-color: #036a7e;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: #ddd;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: #63b6c7;
+        }
+
+        .content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar d-flex flex-column">
+        <h2><a class="navbar-brand text-center py-3" href="#">Intern Portal</a></h2>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link " aria-current="page" href="{% url 'intern_dashboard' user.id %}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="{% url 'goals' %}">Goals</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link " href="{% url 'Self_Assessment' %}">Self-Assessmentals</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-danger" href="{% url 'logout' %}">Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+<!-- Page Content -->
+<div class="content">
+    <h2 class="mb-4">Your Goals</h2>
+    {% for goal in goals %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">{{ goal.title }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Description:</strong> {{ goal.description }}</p>
+                        <p><strong>Deadline:</strong> {{ goal.deadline|date:"F d, Y" }}</p>
+                        <p><strong>Status:</strong> {{ goal.get_status_display }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>No goals assigned yet.</p>
+    {% endfor %}
+    <div class="mb-8">
+        <a href="{% url 'goals_history' %}">
+            <button type="submit" class="btn btn-primary">View Goals History</button>
+        </a>
+    </div>
+</div>
+
+
+
+
+    <div class="col-md-3 card">
+      <div class="card-header bg-secondary text-white">
+        <h5>Update Goal Progress</h5>
+      </div>
+      <div class="card-body">
+        <form>
+          <!-- Select Goal -->
+          <div class="mb-3">
+            <label for="goalSelect" class="form-label">Select Goal</label>
+            <select id="goalSelect" class="form-select">
+              <option selected>Choose a goal...</option>
+              <option value="1">Complete Project Documentation</option>
+              <option value="2">Attend Team Training Sessions</option>
+              <option value="3">Finish Client Report</option>
+            </select>
+          </div>
+          
+          <!-- Comments -->
+          <div class="mb-3">
+            <label for="comments" class="form-label">Comments</label>
+            <textarea id="comments" class="form-control" rows="3" placeholder="Add any comments or details about the progress"></textarea>
+          </div>
+          
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-primary">Update Progress</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

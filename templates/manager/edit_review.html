@@ -1,0 +1,50 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container my-5">
+    <h2 class="text-center mb-4">Performance Metrics</h2>
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4>Details for: <span id="user-name">{{ review.user.username }}</span></h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{% url 'edit_review' review.id %}">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="productivity-score"><strong>Productivity Score:</strong></label>
+                        <input type="number" id="productivity-score" name="productivity_score" class="form-control" value="{{ review.productivity_score }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="punctuality-score"><strong>Punctuality Score:</strong></label>
+                        <input type="number" id="punctuality-score" name="punctuality_score" class="form-control" value="{{ review.punctuality_score }}">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="collaboration-score"><strong>Collaboration Score:</strong></label>
+                        <input type="number" id="collaboration-score" name="collaboration_score" class="form-control" value="{{ review.collaboration_score }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="goals"><strong>Goal Achievement:</strong></label>
+                        <input type="text" id="goals" name="goals" class="form-control" value="{{ review.goals }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="feedback"><strong>Feedback:</strong></label>
+                        <textarea id="feedback" name="feedback" class="form-control">{{ review.feedback }}</textarea>
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                    <a href="{% url 'work_desc' review.user.id %}" class="btn btn-secondary">Back to List</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}

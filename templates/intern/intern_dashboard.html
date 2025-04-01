@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Review Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background-color: #012128;
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: #333c3a;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: #012128;
+        }
+
+        .content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+            }
+
+            .content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar d-flex flex-column">
+        <h2><a class="navbar-brand text-center py-3" href="#">Intern Portal</a></h2>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="{% url 'intern_dashboard' user.id %}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'goals' %}">Goals</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'Self_Assessment' %}">Self-Assessment</a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'attendance' %}">My Attendance</a>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link text-danger" href="{% url 'logout' %}">Logout</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="content">
+        <h2 class="mb-4">User Review Dashboard</h2>
+
+        <!-- Performance Reviews Section -->
+        <div class="card p-4 shadow mb-4">
+            <h4>Performance Reviews</h4>
+            <ul class="list-group list-group-flush">
+                {% for review in performance_reviews %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="badge bg-success">{{ review.date|date:'Y-m-d H:i' }}</span>
+                    <a href="{% url 'intern_performance_details' review.id %}"><button class="btn btn-primary btn-sm">View Details</button></a>
+
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+                <!-- Manager Feedback Section -->
+                <div class="card p-4 shadow mb-4">
+                    <h4>Feedback from Manager</h4>
+                    {% for review in performance_reviews %}
+                        <!-- Show only the first line of the feedback -->
+                        <p class="feedback-preview mb-2"><strong>Recent Feedback:</strong> {{ review.feedback|slice:":100" }}...</p>
+                        <div class="div">
+                            <!-- View button triggering the modal -->
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#reviewModal" data-feedback="{{ review.feedback }}">
+                                View
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+
+        <!-- Modal to display feedback details -->
+        <div class="modal fade" id="reviewModal" tabindex="-1" role="dialog" aria-labelledby="reviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reviewModalLabel">Manager's Feedback</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Review content will be injected here -->
+                <p id="modalFeedback"></p>
+            </div>
+            </div>
+        </div>
+        </div>
+
+
+
+
+        <!-- Self-Assessment Section -->
+        <div class="card p-4 shadow">
+            <h4>Self-Assessment</h4>
+            <form>
+                <div class="mb-3">
+                    <label for="selfAssessment" class="form-label">Add Self-Assessment</label>
+                    <textarea class="form-control" id="selfAssessment" rows="4"
+                        placeholder="Write about your achievements, progress, and challenges..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Update</button>
+            </form>
+        </div>
+    </div>
+    <!-- jQuery and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // JavaScript to handle the review content dynamically
+        $('#reviewModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var feedback = button.data('feedback'); // Extract feedback data from the button
+            var modal = $(this);
+            modal.find('.modal-body #modalFeedback').text(feedback); // Set the feedback text in the modal
+        });
+    </script>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
