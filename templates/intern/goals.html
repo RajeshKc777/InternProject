@@ -15,7 +15,7 @@
         .sidebar {
             width: 250px;
             min-height: 100vh;
-            background-color: #036a7e;
+            background: linear-gradient(180deg, #667eea, #764ba2);
             color: #fff;
             position: fixed;
             top: 0;
@@ -63,6 +63,10 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link " href="{% url 'Self_Assessment' %}">Self-Assessmentals</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'attendance' %}">My Attendance</a>
+                </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link text-danger" href="{% url 'logout' %}">Logout</a>
