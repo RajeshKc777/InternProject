@@ -65,7 +65,9 @@ def user_login(request):
             login(request, user)
             # Redirect based on user type
             if user.user_type == UserTypes.EMPLOYER:
-                return redirect('employee_dashboard')  
+                return redirect('employer_dashboard')  
+            elif user.user_type == UserTypes.EMPLOYEE:
+                return redirect('employee_dashboard')
             elif user.user_type == UserTypes.MANAGER:
                 return redirect('manager_dashboard')   
             elif user.user_type == UserTypes.INTERN:
@@ -210,13 +212,30 @@ def UpCommingReview(request):
     return render(request, "manager/UpCommingReview.html")
 
 
-
-# employer
+#Employer Dashboard
+# For viewing all review
+@login_required
 def employer_dashboard(request):
-    return render(request, "employer/employer_dashboard.html")
+    user = request.user
+    if user.user_type != UserTypes.EMPLOYER:
+        return redirect('user_login')  # Ensure only employers (employees) access this dashboard
+    
+    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
+    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
+    goals_completed = goals.filter(completed=True).count()
+    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    
+    data = {
+        'user': user,
+        'performance_reviews': performance_reviews,
+        'goals': goals,
+        'goals_completed': goals_completed,
+        'attendance_records': attendance_records,
+    }
+    return render(request, "employer/employer_dashboard.html", data)
 
 
-# intern
+#intern
 def intern_dashboard(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id, user_type=UserTypes.INTERN)
     if request.user != user:
@@ -236,6 +255,7 @@ def intern_dashboard(request, user_id):
     }
     return render(request, "intern/intern_dashboard.html", data)
 
+#View performance details for intern
 def intern_performance_details(request, review_id):
     review = get_object_or_404(PerformanceReview, id=review_id)
     user = review.user  
@@ -294,10 +314,26 @@ def assign_goals(request):
 def goals_history(request):
     return render(request, "intern/goals_history.html")
 
-# intern
+# For viewing all goals assigned to the user
 @login_required
 def employee_dashboard(request):
-    return render(request, "employees/empoyee_dashboard.html", )
+    user = request.user
+    if user.user_type != UserTypes.EMPLOYER:
+        return redirect('user_login')  # Ensure only employees access this dashboard
+    
+    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
+    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
+    goals_completed = goals.filter(completed=True).count()
+    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    
+    data = {
+        'user': user,
+        'performance_reviews': performance_reviews,
+        'goals': goals,
+        'goals_completed': goals_completed,
+        'attendance_records': attendance_records,
+    }
+    return render(request, "employees/employee_dashboard.html", data)
 
 def attendance_view(request):
     status = None

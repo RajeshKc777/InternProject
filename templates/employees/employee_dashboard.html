@@ -1,5 +1,5 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -26,9 +26,7 @@
             width: 250px;
             transition: width 0.3s ease;
         }
-        #sidebar.collapsed {
-            width: 70px;
-        }
+       
         .sidebar-logo a {
             color: white;
             font-weight: bold;
@@ -39,10 +37,16 @@
             transition: background 0.3s ease;
             border-radius: 8px;
             margin: 5px 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
         }
         .sidebar-link:hover {
             background: rgba(255, 255, 255, 0.2);
             color: white;
+        }
+        .sidebar-link i {
+            margin-right: 10px;
         }
         .toggle-btn {
             background: none;
@@ -141,7 +145,7 @@
                     <i class="lni lni-grid-alt"></i>
                 </button>
                 <div class="sidebar-logo ms-2">
-                    <a href="#">{{ user.username }} (Employee)</a>
+                    <a href="#">{{ user.username }} ({{ user.user_type|title }})</a>
                 </div>
             </div>
             <ul class="sidebar-nav">
@@ -152,7 +156,7 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="{% url 'goals' %}" class="sidebar-link">
                         <i class="lni lni-agenda"></i>
                         <span>Tasks</span>
                     </a>
@@ -163,15 +167,12 @@
                         <span>My Attendance</span>
                     </a>
                 </li>
-
                 <li class="sidebar-item">
                     <a href="{% url 'logout' %}" class="sidebar-link">
                         <i class="lni lni-exit"></i>
                         <span>Logout</span>
                     </a>
                 </li>
-
-
             </ul>
         </aside>
 
@@ -196,6 +197,24 @@
             </div>
         </div>
 
+        <!-- Feedback Modal -->
+        <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="feedbackModalLabel">Manager Feedback</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="modalFeedback"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main">
             <nav class="navbar navbar-expand px-4 py-3">
                 <div class="navbar-collapse collapse">
@@ -204,7 +223,9 @@
                             <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
                                 <img src="{% static 'img/user.png' %}" class="avatar img-fluid" alt="User Avatar">
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end rounded"></div>
+                            <div class="dropdown-menu dropdown-menu-end rounded">
+                                <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
+                            </div>
                         </li>
                     </ul>
                 </div>
@@ -213,73 +234,102 @@
                 <div class="container-fluid">
                     <h3 class="fw-bold fs-4 mb-4">Employee Dashboard</h3>
                     <div class="row g-4">
+                        <!-- Task Progress -->
                         <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body py-4">
                                     <h5 class="mb-2 fw-bold">Task Progress</h5>
                                     <p class="mb-2">Completed Tasks</p>
                                     <div class="mb-0">
-                                        <span class="fw-bold text-success">75% Since Last Week</span>
+                                        <span class="fw-bold text-success">
+                                            {{ goals_completed }} of {{ goals|length }} Completed
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- Attendance -->
                         <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body py-4">
                                     <h5 class="mb-2 fw-bold">Attendance</h5>
                                     <p class="mb-2">This Month</p>
                                     <div class="mb-0">
-                                        <span class="fw-bold text-primary">95% Present</span>
+                                        <span class="fw-bold text-primary">
+                                            {{ attendance_records|length }} Check-ins
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- Performance Reviews -->
                         <div class="col-12 col-md-4">
                             <div class="card">
                                 <div class="card-body py-4">
-                                    <h5 class="mb-2 fw-bold">Pending Tasks</h5>
-                                    <p class="mb-2">Due This Week</p>
+                                    <h5 class="mb-2 fw-bold">Performance Reviews</h5>
+                                    <p class="mb-2">Recent Reviews</p>
                                     <div class="mb-0">
-                                        <span class="fw-bold text-warning">3 Tasks</span>
+                                        <span class="fw-bold text-warning">
+                                            {{ performance_reviews|length }} Reviews
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <!-- Detailed Sections -->
                     <h3 class="fw-bold fs-4 mt-5 mb-3">Your Tasks</h3>
                     <div class="row">
                         <div class="col-12">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Task</th>
-                                        <th scope="col">Assigned By</th>
-                                        <th scope="col">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <th scope="row">1</th>
-                                        <td>Design Homepage</td>
-                                        <td>Mark Otto</td>
-                                        <td><span class="badge bg-success">Completed</span></td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">2</th>
-                                        <td>Review Code</td>
-                                        <td>Jacob Thornton</td>
-                                        <td><span class="badge bg-warning">Pending</span></td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row">3</th>
-                                        <td>Update Docs</td>
-                                        <td>Larry Bird</td>
-                                        <td><span class="badge bg-primary">In Progress</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div class="card">
+                                <div class="card-body py-4">
+                                    <h5 class="mb-3 fw-bold">Assigned Tasks</h5>
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">Task</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Progress</th>
+                                                <th scope="col">Deadline</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for goal in goals %}
+                                            <tr>
+                                                <th scope="row">{{ forloop.counter }}</th>
+                                                <td>{{ goal.title }}</td>
+                                                <td>{{ goal.status|title }}</td>
+                                                <td>{{ goal.progress }}%</td>
+                                                <td>{{ goal.deadline|date:'Y-m-d' }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="5">No tasks assigned.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold fs-4 mt-5 mb-3">Manager Feedback</h3>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body py-4">
+                                    <h5 class="mb-3 fw-bold">Recent Feedback</h5>
+                                    {% for review in performance_reviews %}
+                                    <p class="mb-2">{{ review.feedback|slice:":100" }}...</p>
+                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                        data-feedback="{{ review.feedback }}">View Full Feedback</button>
+                                    <hr>
+                                    {% empty %}
+                                    <p>No feedback available.</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -291,7 +341,7 @@
                             <a href="#" class="footer-brand">Task Management</a>
                         </div>
                         <div class="col-md-4 mb-3 mb-md-0">
-                            <p class="mb-0">&copy; 2025 Task Management. All Rights Reserved.</p>
+                            <p class="mb-0">© 2025 Task Management. All Rights Reserved.</p>
                         </div>
                         <div class="col-md-4 text-md-end">
                             <ul class="list-inline mb-0">
@@ -312,6 +362,7 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
@@ -322,7 +373,14 @@
         toggleBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
         });
-        console.log("Bootstrap JS loaded:", typeof bootstrap !== "undefined");
+
+        // Modal feedback
+        $('#feedbackModal').on('show.bs.modal', function (event) {
+            const button = $(event.relatedTarget);
+            const feedback = button.data('feedback');
+            const modal = $(this);
+            modal.find('#modalFeedback').text(feedback);
+        });
     </script>
 </body>
 </html>

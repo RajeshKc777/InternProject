@@ -8,6 +8,7 @@ from Employee_Performance_Review_System import settings
 
 
 class UserTypes(models.TextChoices):
+    EMPLOYEE = 'Employee', 'Employee'
     EMPLOYER = 'employer', 'Employer'
     MANAGER = 'manager', 'Manager'
     INTERN = 'intern', 'Intern'
@@ -81,9 +82,6 @@ class ReviewScheduling(models.Model):
 
 
 #review  
-    
-# ...existing code...
-
 class Review(models.Model):
     reviewer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews_given')
     employee = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews_received')
