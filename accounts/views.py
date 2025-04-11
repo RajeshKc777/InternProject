@@ -12,11 +12,6 @@ from django.utils import timezone
 
 from django.shortcuts import render
 
-def attendance_view(request):
-    return render(request, 'attendance/attendance.html')
-
-
-
 
 # Create your views here.
 def user_register(request):
@@ -130,8 +125,7 @@ def work_desc(request, user_id):
         except Exception as e:
             messages.error(request, f"An error occurred: {e}")
         return redirect("work_desc", user_id=user.id)
-    
-# Handle Review Scheduling Form submission
+    # Handle Review Scheduling Form submission
     if "scheduleReview" in request.POST:  # Check if this is the review scheduling form
         review_title = request.POST.get("reviewTitle")
         review_date = request.POST.get("reviewDate")
@@ -285,10 +279,44 @@ def Self_Assessment(request):
             messages.error(request, "Self-assessment cannot be empty!")
     return render(request, "intern/Self_Assessment.html")
 
+@login_required
 def goals(request):
-    goals = Goal.objects.all()
+    user = request.user
+    if user.user_type != UserTypes.INTERN:
+        return redirect('user_login')  # Restrict to interns
+    
+    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
+    
+    if request.method == "POST":
+        goal_id = request.POST.get('goal_id')
+        progress = request.POST.get('progress')
+        comments = request.POST.get('comments')
+        
+        try:
+            goal = Goal.objects.get(id=goal_id, assigned_to=user)
+            progress = int(progress)
+            if 0 <= progress <= 100:
+                goal.progress = progress
+                if progress == 100:
+                    goal.completed = True
+                    goal.status = 'completed'
+                elif progress > 0:
+                    goal.status = 'in_progress'
+                if comments:
+                    goal.description += f"\nUpdate: {comments}"
+                goal.save()
+                messages.success(request, "Goal progress updated successfully!")
+            else:
+                messages.error(request, "Progress must be between 0 and 100!")
+        except Goal.DoesNotExist:
+            messages.error(request, "Goal not found!")
+        except ValueError:
+            messages.error(request, "Invalid progress value!")
+        return redirect('goals')
+    
     context = {
-        'goals': goals
+        'user': user,
+        'goals': goals,
     }
     return render(request, "intern/goals.html", context)
 
@@ -311,8 +339,22 @@ def assign_goals(request):
         goal.save()
 
 
+@login_required
 def goals_history(request):
-    return render(request, "intern/goals_history.html")
+    user = request.user
+    if user.user_type != UserTypes.INTERN:
+        return redirect('user_login')  # Restrict to interns
+    
+    # Fetch goals that are completed or past their deadline
+    goals = Goal.objects.filter(
+        assigned_to=user
+    ).exclude(status='pending').order_by('-deadline')  # Exclude active pending goals
+    
+    context = {
+        'user': user,
+        'goals': goals,
+    }
+    return render(request, "intern/goals_history.html", context)
 
 # For viewing all goals assigned to the user
 @login_required

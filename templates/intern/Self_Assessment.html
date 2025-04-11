@@ -1,117 +1,255 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goals</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Self-Assessment</title>
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Custom CSS -->
     <style>
         body {
+            background: #f4f7fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .wrapper {
             display: flex;
-        }
-
-        .sidebar {
-            width: 250px;
             min-height: 100vh;
+        }
+        #sidebar {
             background: linear-gradient(180deg, #667eea, #764ba2);
-            color: #fff;
-            position: fixed;
-            top: 0;
-            left: 0;
-            overflow-y: auto;
+            color: white;
+            width: 250px;
+            transition: width 0.3s ease;
         }
-
-        .sidebar .nav-link {
-            color: #ddd;
+        
+        .sidebar-logo a {
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
         }
-
-        .sidebar .nav-link.active {
-            background-color: #495057;
+        .sidebar-link {
+            color: white;
+            transition: background 0.3s ease;
+            border-radius: 8px;
+            margin: 5px 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
         }
-
-        .content {
-            margin-left: 250px;
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .sidebar-link i {
+            margin-right: 10px;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .main {
             flex-grow: 1;
-            padding: 20px;
+            background: #fff;
         }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                position: relative;
-            }
-
-            .content {
-                margin-left: 0;
-            }
+        .navbar {
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-body {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+        h3 {
+            color: #333;
+            font-weight: 700;
+        }
+        .footer {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            padding: 79px 0;
+            position: relative;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+        }
+        .footer a {
+            color: #fff;
+            text-decoration: none;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        .footer a:hover {
+            color: #e9ecef;
+            transform: translateY(-2px);
+        }
+        .footer .footer-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .footer .list-inline-item {
+            margin: 0 15px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Sidebar -->
-    <nav class="sidebar d-flex flex-column">
-        <h2><a class="navbar-brand text-center py-3" href="#">Intern Portal</a></h2>
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link " aria-current="page" href="{% url 'intern_dashboard' user.id%}">Dashboard</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'goals' %}">Goals</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'Self_Assessment' %}">Self-Assessmentals</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'attendance' %}">My Attendance</a>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link text-danger" href="{% url 'logout' %}">Logout</a>
-            </li>
-        </ul>
-    </nav>
-
-    <!-- Page Content -->
-    <div class="content">
-            <div class="container my-5">
-                <h2 class="text-center mb-4">Self-Assessment Form</h2>
-                <div class="card shadow">
-                    <div class="card-body">
-                        <form>
-                            <!-- Performance Evaluation Section -->
-                            <div class="mb-3">
-                                <label for="performanceEvaluation" class="form-label">Evaluate Your Performance</label>
-                                <textarea class="form-control" id="performanceEvaluation" rows="5" placeholder="Describe your personal performance..." required></textarea>
-                            </div>
-        
-                            <!-- File Upload Section -->
-                            <div class="mb-3">
-                                <label for="uploadDocuments" class="form-label">Upload Supporting Documents or Certifications (Optional)</label>
-                                <input type="file" class="form-control" id="uploadDocuments" accept=".pdf,.docx,.jpg,.png">
-                            </div>
-        
-                            <!-- Feedback Section -->
-                            <div class="mb-3">
-                                <label for="feedback" class="form-label">Feedback</label>
-                                <textarea class="form-control" id="feedback" rows="4" placeholder="Submit your challenges, suggestions, or comments..."></textarea>
-                            </div>
-        
-                            <!-- Submit Button -->
-                            <div class="text-center">
-                                <button type="submit" class="btn btn-primary w-50">Submit Assessment</button>
-                            </div>
-                        </form>
-                    </div>
+    <div class="wrapper">
+        <aside id="sidebar">
+            <div class="d-flex align-items-center p-3">
+                <button class="toggle-btn" type="button">
+                    <i class="lni lni-grid-alt"></i>
+                </button>
+                <div class="sidebar-logo ms-2">
+                    <a href="#">{{ user.username }} ({{ user.user_type|title }})</a>
                 </div>
             </div>
-          </div>
-        
-    </div>    
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link">
+                        <i class="lni lni-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'goals' %}" class="sidebar-link">
+                        <i class="lni lni-target"></i>
+                        <span>Goals</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'Self_Assessment' %}" class="sidebar-link active">
+                        <i class="lni lni-clipboard"></i>
+                        <span>Self-Assessment</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'attendance' %}" class="sidebar-link">
+                        <i class="lni lni-calendar"></i>
+                        <span>My Attendance</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'logout' %}" class="sidebar-link">
+                        <i class="lni lni-exit"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="main">
+            <nav class="navbar navbar-expand px-4 py-3">
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
+                                <img src="{% static 'img/user.png' %}" class="avatar img-fluid" alt="User Avatar">
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end rounded">
+                                <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <main class="content px-4 py-4">
+                <div class="container-fluid">
+                    <h3 class="fw-bold fs-4 mb-4">Self-Assessment</h3>
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body py-4">
+                                    <h5 class="mb-3 fw-bold">Submit Your Self-Assessment</h5>
+                                    <form method="post" action="{% url 'Self_Assessment' %}" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <!-- Performance Evaluation Section -->
+                                        <div class="mb-3">
+                                            <label for="performanceEvaluation" class="form-label">Evaluate Your Performance</label>
+                                            <textarea class="form-control" id="performanceEvaluation" name="performance_evaluation" rows="5" 
+                                                placeholder="Describe your personal performance..." required></textarea>
+                                        </div>
+                                        <!-- File Upload Section -->
+                                        <div class="mb-3">
+                                            <label for="uploadDocuments" class="form-label">Upload Supporting Documents or Certifications (Optional)</label>
+                                            <input type="file" class="form-control" id="uploadDocuments" name="documents" 
+                                                accept=".pdf,.docx,.jpg,.png">
+                                        </div>
+                                        <!-- Feedback Section -->
+                                        <div class="mb-3">
+                                            <label for="feedback" class="form-label">Feedback</label>
+                                            <textarea class="form-control" id="feedback" name="feedback" rows="4" 
+                                                placeholder="Submit your challenges, suggestions, or comments..."></textarea>
+                                        </div>
+                                        <!-- Submit Button -->
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-primary">Submit Assessment</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row align-items-center text-center text-md-start">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <a href="#" class="footer-brand">Intern Portal</a>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <p class="mb-0">© 2025 Intern Portal. All Rights Reserved.</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item">
+                                    <a href="#">Contact</a>
+                                </li>
+                                <li class="list-inline-item">
+                                    <a href="#">About Us</a>
+                                </li>
+                                <li class="list-inline-item">
+                                    <a href="#">Terms & Conditions</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.querySelector('.toggle-btn');
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    </script>
 </body>
 
 </html>

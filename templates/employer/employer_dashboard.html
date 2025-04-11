@@ -138,7 +138,7 @@
         }
     </style>
 </head>
-
+{% csrf_token %}
 <body>
     <div class="wrapper">
         <aside id="sidebar">
@@ -157,13 +157,7 @@
                         <span>Profile</span>
                     </a>
                 </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'goals' %}" class="sidebar-link">
-                        <i class="lni lni-agenda"></i>
-                        <span>Tasks</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
+                
                     <a href="{% url 'attendance' %}" class="sidebar-link">
                         <i class="lni lni-calendar"></i>
                         <span>My Attendance</span>
