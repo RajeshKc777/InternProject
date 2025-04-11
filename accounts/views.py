@@ -218,32 +218,51 @@ def employer_dashboard(request):
 
 # intern
 def intern_dashboard(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id)
-    performance_reviews = PerformanceReview.objects.filter(user=user).order_by("-id")[:3]
-
+    user = get_object_or_404(CustomUser, id=user_id, user_type=UserTypes.INTERN)
+    if request.user != user:
+        return redirect('user_login')  # Ensure only the intern can access their dashboard
+    
+    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
+    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
+    goals_completed = goals.filter(completed=True).count()
+    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    
     data = {
         'user': user,
         'performance_reviews': performance_reviews,
-        }
-
+        'goals': goals,
+        'goals_completed': goals_completed,
+        'attendance_records': attendance_records,
+    }
     return render(request, "intern/intern_dashboard.html", data)
 
 def intern_performance_details(request, review_id):
     review = get_object_or_404(PerformanceReview, id=review_id)
     user = review.user  
-
-
-
     data = {
         'review': review,
         'user': user,
-
     }
-
     return render(request, "intern/intern_performance_detail.html", data)
 
-
+#self-assessment
 def Self_Assessment(request):
+    if request.method == "POST":
+        self_assessment_text = request.POST.get('selfAssessment')
+        user = request.user
+        if self_assessment_text:
+            PerformanceReview.objects.create(
+                user=user,
+                productivity_score=0,  # Placeholder; adjust as needed
+                punctuality_score=0,
+                collaboration_score=0,
+                goals="Self-Assessment",
+                feedback=self_assessment_text,
+            )
+            messages.success(request, "Self-assessment submitted successfully!")
+            return redirect('intern_dashboard', user_id=user.id)
+        else:
+            messages.error(request, "Self-assessment cannot be empty!")
     return render(request, "intern/Self_Assessment.html")
 
 def goals(request):
