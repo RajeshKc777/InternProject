@@ -1,0 +1,39 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <a href="javascript:history.back()" class="btn btn-secondary mb-3">Back</a>
+    <h2>Users</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>User Type</th>
+                <th>Assign Task</th>
+                <th>Chat</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.get_user_type_display }}</td>
+                <td>
+                    <form method="post" action="{% url 'assign_goal' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="assigned_to" value="{{ user.id }}" />
+                        <input type="text" name="title" placeholder="Task Title" required />
+                        <input type="text" name="description" placeholder="Task Description" required />
+                        <input type="date" name="deadline" />
+                        <button type="submit">Assign</button>
+                    </form>
+                </td>
+                <td><a href="{% url 'chat' user.id %}">Chat</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

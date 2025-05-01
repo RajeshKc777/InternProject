@@ -8,7 +8,7 @@ from Employee_Performance_Review_System import settings
 
 
 class UserTypes(models.TextChoices):
-    EMPLOYEE = 'Employee', 'Employee'
+    EMPLOYEE = 'employee', 'Employee'
     EMPLOYER = 'employer', 'Employer'
     MANAGER = 'manager', 'Manager'
     INTERN = 'intern', 'Intern'
@@ -91,5 +91,16 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review by {self.reviewer.username} for {self.employee.username}"
+
+
+# Chat message model for chat system
+class ChatMessage(models.Model):
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"From {self.sender.username} to {self.receiver.username} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
 
     

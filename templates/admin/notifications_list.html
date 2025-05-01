@@ -1,0 +1,22 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <a href="javascript:history.back()" class="btn btn-secondary mb-3">Back</a>
+    <h2>Notifications</h2>
+    <ul class="list-group">
+        {% for notification in notifications %}
+        <li class="list-group-item list-group-item-warning">
+            Task "{{ notification.title }}" assigned to {{ notification.assigned_to.username }} is 
+            {% if notification.status == 'missed' %}
+                overdue
+            {% else %}
+                nearing deadline ({{ notification.deadline|date:"Y-m-d H:i" }})
+            {% endif %}
+        </li>
+        {% empty %}
+        <li class="list-group-item">No notifications.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

@@ -16,7 +16,7 @@ urlpatterns = [
     path('assign_goal/', views.assign_goal, name='assign_goal'),
     path('UpCommingReview/', views.UpCommingReview, name='UpCommingReview'),
 
-    
+
 
     # employer
     path('employer_dashboard/', views.employer_dashboard, name="employer_dashboard"),
@@ -31,11 +31,23 @@ urlpatterns = [
     # Employees 
     path('employee_dashboard/', views.employee_dashboard, name="employee_dashboard"),
     
-    
+    # Admin
+    path('admin_dashboard/', views.admin_dashboard, name="admin_dashboard"),
+
+    # Chat
+    path('chat/<int:user_id>/', views.chat_view, name='chat'),
+    path('send_message/', views.send_message, name='send_message'),
+    path('user_list/<str:role>/', views.user_list_by_role, name='user_list_by_role'),
+
+    path('users_list/', views.users_list, name='users_list'),
+    path('tasks_list/', views.tasks_list, name='tasks_list'),
+    path('attendance_list/', views.attendance_list, name='attendance_list'),
+    path('notifications_list/', views.notifications_list, name='notifications_list'),
+
     path('edit_review/<int:review_id>/edit/', views.edit_review, name='edit_review'),
     path('logout/', views.logout_view, name='logout'),  # Logout URL
 
-   
+
 
     path('attendance/', views.attendance_view, name="attendance")
     

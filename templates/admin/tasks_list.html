@@ -1,0 +1,34 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <a href="javascript:history.back()" class="btn btn-secondary mb-3">Back</a>
+    <h2>Tasks / Goals</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Assigned To</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Deadline</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for goal in goals %}
+            <tr>
+                <td>{{ goal.title }}</td>
+                <td>{{ goal.assigned_to.username }}</td>
+                <td>{{ goal.status|title }}</td>
+                <td>{{ goal.progress }}%</td>
+                <td>{{ goal.deadline|date:"Y-m-d H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No tasks found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

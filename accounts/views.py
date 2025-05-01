@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review
+from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404
@@ -9,8 +9,64 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from .models import Attend
 from django.utils import timezone
-
+from django.core.mail import send_mail
+from django.conf import settings
 from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@login_required
+def chat_view(request, user_id):
+    other_user = get_object_or_404(CustomUser, id=user_id)
+    if request.user == other_user:
+        messages.error(request, "Cannot chat with yourself.")
+        return redirect('user_login')
+
+    # Fetch chat messages between the two users
+    messages_qs = ChatMessage.objects.filter(
+        (models.Q(sender=request.user) & models.Q(receiver=other_user)) |
+        (models.Q(sender=other_user) & models.Q(receiver=request.user))
+    ).order_by('timestamp')
+
+    context = {
+        'other_user': other_user,
+        'messages': messages_qs,
+    }
+    return render(request, 'chat/chat.html', context)
+
+@login_required
+@csrf_exempt
+def send_message(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        receiver_id = data.get('receiver_id')
+        message_text = data.get('message')
+
+        receiver = get_object_or_404(CustomUser, id=receiver_id)
+        chat_message = ChatMessage.objects.create(
+            sender=request.user,
+            receiver=receiver,
+            message=message_text
+        )
+        chat_message.save()
+        return JsonResponse({'status': 'success', 'message': 'Message sent.'})
+    return JsonResponse({'status': 'fail', 'message': 'Invalid request.'})
+
+@login_required
+def user_list_by_role(request, role):
+    # Validate role
+    valid_roles = [choice[0] for choice in UserTypes.choices]
+    if role not in valid_roles:
+        messages.error(request, "Invalid user role specified.")
+        return redirect('user_login')
+
+    users = CustomUser.objects.filter(user_type=role)
+    context = {
+        'users': users,
+        'role': role,
+    }
+    return render(request, 'chat/user_list.html', context)
 
 
 # Create your views here.
@@ -26,6 +82,9 @@ def user_register(request):
             messages.error(request, "password need to be same")
             return redirect('user_register')
         else:
+            if user_type not in [choice[0] for choice in UserTypes.choices]:
+                messages.error(request, "Invalid user type selected.")
+                return redirect('user_register')
 
             if CustomUser.objects.filter(username=username).exists():
                 messages.error(request, "username already existed!")
@@ -47,6 +106,90 @@ def user_register(request):
 
     return render(request, "registration/register.html")
 
+from django.db import models
+
+import json
+from django.db.models import Count
+from django.utils.timezone import now, timedelta
+
+@login_required
+def admin_dashboard(request):
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
+    goals = Goal.objects.all()
+    attendance_records = Attend.objects.filter(datetime__gte=now()-timedelta(days=30))
+
+    # Prepare data for charts
+
+    # Pie chart: user count by user type
+    user_type_counts = users.values('user_type').annotate(count=Count('id'))
+    user_type_data = {ut['user_type']: ut['count'] for ut in user_type_counts}
+
+    # Bar chart: task count by status
+    task_status_counts = goals.values('status').annotate(count=Count('id'))
+    task_status_data = {ts['status']: ts['count'] for ts in task_status_counts}
+
+    # Line chart: attendance count by date (last 30 days)
+    attendance_by_date_qs = attendance_records.extra({'date': "date(datetime)"}).values('date').annotate(count=Count('id')).order_by('date')
+    attendance_by_date = {str(record['date']): record['count'] for record in attendance_by_date_qs}
+
+    context = {
+        'user_type_data': json.dumps(user_type_data),
+        'task_status_data': json.dumps(task_status_data),
+        'attendance_by_date': json.dumps(attendance_by_date),
+    }
+    return render(request, "admin/admin_dashboard.html", context)
+
+@login_required
+def users_list(request):
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
+    context = {
+        'users': users,
+    }
+    return render(request, "admin/users_list.html", context)
+
+@login_required
+def tasks_list(request):
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    goals = Goal.objects.all().order_by('deadline')
+    context = {
+        'goals': goals,
+    }
+    return render(request, "admin/tasks_list.html", context)
+
+@login_required
+def attendance_list(request):
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    attendance_records = Attend.objects.all().order_by('-datetime')[:50]
+    context = {
+        'attendance_records': attendance_records,
+    }
+    return render(request, "admin/attendance_list.html", context)
+
+@login_required
+def notifications_list(request):
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    from django.utils.timezone import now, timedelta
+    upcoming_deadline = now() + timedelta(days=3)
+    goals = Goal.objects.all()
+    notifications = goals.filter(models.Q(deadline__lte=upcoming_deadline) | models.Q(status='missed')).order_by('deadline')
+
+    context = {
+        'notifications': notifications,
+    }
+    return render(request, "admin/notifications_list.html", context)
+
 def user_login(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -59,7 +202,9 @@ def user_login(request):
 
             login(request, user)
             # Redirect based on user type
-            if user.user_type == UserTypes.EMPLOYER:
+            if user.user_type == UserTypes.ADMIN:
+                return redirect('admin_dashboard')
+            elif user.user_type == UserTypes.EMPLOYER:
                 return redirect('employer_dashboard')  
             elif user.user_type == UserTypes.EMPLOYEE:
                 return redirect('employee_dashboard')
@@ -179,19 +324,28 @@ def allReview(request, user_id):
     return render(request, "manager/allReview.html", data)
 
 # For Assing Goals
+
+
 def assign_goal(request):
     if request.method == 'POST':
         description = request.POST.get('description')
         title = request.POST.get('title')  # Capture the title
         deadline = request.POST.get('deadline')
         if title.strip() and description.strip():  # Ensure title and description are not empty
-            Goal.objects.create(
+            goal = Goal.objects.create(
                 title=title,
                 description=description,
                 status='in_progress',
                 progress=0,
                 deadline=deadline if deadline else None  # Set deadline if provided
             )
+            # Send email notification to assigned user if assigned_to is set
+            if hasattr(goal, 'assigned_to') and goal.assigned_to and goal.assigned_to.email:
+                subject = 'New Task Assigned'
+                message = f'Hello {goal.assigned_to.username},\n\nYou have been assigned a new task: {goal.title}.\n\nDescription: {goal.description}\nDeadline: {goal.deadline}\n\nPlease check your dashboard for more details.'
+                from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
+                recipient_list = [goal.assigned_to.email]
+                send_mail(subject, message, from_email, recipient_list)
             messages.success(request, "Goal assigned successfully!")
         else:
             messages.error(request, "Goal title and description cannot be empty!")
@@ -320,6 +474,9 @@ def goals(request):
     }
     return render(request, "intern/goals.html", context)
 
+from django.core.mail import send_mail
+from django.conf import settings
+
 def assign_goals(request):
     users = CustomUser.objects.filter(user_type__in=[UserTypes.INTERN, UserTypes.EMPLOYER])  # Adjust as needed
     if request.method == 'POST':
@@ -337,6 +494,14 @@ def assign_goals(request):
             assigned_to=assigned_to
         )
         goal.save()
+
+        # Send email notification to assigned user
+        if assigned_to.email:
+            subject = 'New Task Assigned'
+            message = f'Hello {assigned_to.username},\n\nYou have been assigned a new task: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
+            from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
+            recipient_list = [assigned_to.email]
+            send_mail(subject, message, from_email, recipient_list)
 
 
 @login_required

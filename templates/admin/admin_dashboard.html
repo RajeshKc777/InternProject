@@ -1,0 +1,336 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <style>
+        body {
+            background: #f4f7fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+        #sidebar {
+            background: linear-gradient(180deg, #667eea, #764ba2);
+            color: white;
+            width: 250px;
+            transition: width 0.3s ease;
+        }
+        .sidebar-logo a {
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .sidebar-link {
+            color: white;
+            transition: background 0.3s ease;
+            border-radius: 8px;
+            margin: 5px 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .sidebar-link i {
+            margin-right: 10px;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .main {
+            flex-grow: 1;
+            background: #fff;
+            padding: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        table thead {
+            background: #667eea;
+            color: white;
+        }
+        table th, table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+        table tbody tr:nth-of-type(odd) {
+            background: #f8f9fa;
+        }
+        form input[type="text"], form input[type="date"] {
+            margin-bottom: 5px;
+            width: 100%;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        form button {
+            background-color: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #5a54d1;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'admin_dashboard' %}">Admin Panel</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{% url 'admin_dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users_list' %}">Users</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'tasks_list' %}">Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'attendance_list' %}">Attendance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'notifications_list' %}">Notifications</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main container mt-4" style="display: flex; gap: 40px;">
+        <div class="charts-column" style="flex: 1; max-width: 600px;">
+            <h1>Admin Dashboard</h1>
+
+            <div style="margin-bottom: 30px;">
+                <canvas id="userTypeChart" width="400" height="200"></canvas>
+            </div>
+            <div style="margin-bottom: 30px;">
+                <canvas id="taskStatusChart" width="400" height="200"></canvas>
+            </div>
+            <div style="margin-bottom: 30px;">
+                <canvas id="attendanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="info-column" style="flex: 1; max-width: 400px; background: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <h2>Chart Information</h2>
+            <section id="userTypeInfo" style="margin-bottom: 20px;">
+                <h3>User Types</h3>
+                <p>This pie chart shows the distribution of different user types in the system.</p>
+                <ul>
+                    <li>Admin: {{ user_type_data.1 }}</li>
+                    <li>Employer: {{ user_type_data.2 }}</li>
+                    <li>Employee: {{ user_type_data.3 }}</li>
+                    <li>Manager: {{ user_type_data.4 }}</li>
+                    <li>Intern: {{ user_type_data.5 }}</li>
+                </ul>
+            </section>
+            <section id="taskStatusInfo" style="margin-bottom: 20px;">
+                <h3>Task Status</h3>
+                <p>This bar chart represents the status of tasks assigned to users.</p>
+                <ul>
+                    <li>In Progress: {{ task_status_data.in_progress }}</li>
+                    <li>Completed: {{ task_status_data.completed }}</li>
+                    <li>Missed: {{ task_status_data.missed }}</li>
+                </ul>
+            </section>
+            <section id="attendanceInfo" style="margin-bottom: 20px;">
+                <h3>Attendance</h3>
+                <p>This line chart shows attendance counts over time.</p>
+                <ul>
+                    {% for date, count in attendance_by_date.items %}
+                    <li>{{ date }}: {{ count }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const userTypeData = JSON.parse('{{ user_type_data|escapejs }}');
+        const taskStatusData = JSON.parse('{{ task_status_data|escapejs }}');
+        const attendanceData = JSON.parse('{{ attendance_by_date|escapejs }}');
+
+        // Pie Chart for User Types
+        const ctxUserType = document.getElementById('userTypeChart').getContext('2d');
+        const userTypeChart = new Chart(ctxUserType, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(userTypeData).map(key => {
+                    switch(key) {
+                        case '1': return 'Admin';
+                        case '2': return 'Employer';
+                        case '3': return 'Employee';
+                        case '4': return 'Manager';
+                        case '5': return 'Intern';
+                        default: return key;
+                    }
+                }),
+                datasets: [{
+                    label: 'User Types',
+                    data: Object.values(userTypeData),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 159, 64, 0.6)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.parsed || 0;
+                                return label + ': ' + value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Bar Chart for Task Status
+        const ctxTaskStatus = document.getElementById('taskStatusChart').getContext('2d');
+        const taskStatusChart = new Chart(ctxTaskStatus, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(taskStatusData).map(key => {
+                    switch(key) {
+                        case 'in_progress': return 'In Progress';
+                        case 'completed': return 'Completed';
+                        case 'missed': return 'Missed';
+                        default: return key;
+                    }
+                }),
+                datasets: [{
+                    label: 'Task Status',
+                    data: Object.values(taskStatusData),
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                let value = context.parsed.y || 0;
+                                return label + ': ' + value;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        precision: 0
+                    }
+                }
+            }
+        });
+
+        // Line Chart for Attendance
+        const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
+        const attendanceChart = new Chart(ctxAttendance, {
+            type: 'line',
+            data: {
+                labels: Object.keys(attendanceData),
+                datasets: [{
+                    label: 'Attendance Count',
+                    data: Object.values(attendanceData),
+                    fill: false,
+                    borderColor: 'rgba(255, 99, 132, 0.6)',
+                    tension: 0.1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                let value = context.parsed.y || 0;
+                                return label + ': ' + value;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        precision: 0
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
