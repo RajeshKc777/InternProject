@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage
+from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404
@@ -15,6 +15,8 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+
+# Removed import of User to avoid conflict with CustomUser
 
 @login_required
 def chat_view(request, user_id):
@@ -71,67 +73,72 @@ def user_list_by_role(request, role):
 
 # Create your views here.
 def user_register(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        confirm_password = request.POST.get("password2")
-        email = request.POST.get("email")
-        user_type = request.POST.get('user_type')
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        password2 = request.POST.get('password2')
+        role = request.POST.get('role')
 
-        if password != confirm_password:
-            messages.error(request, "password need to be same")
+        # Validate passwords match
+        if password != password2:
+            messages.error(request, 'Passwords do not match')
             return redirect('user_register')
-        else:
-            if user_type not in [choice[0] for choice in UserTypes.choices]:
-                messages.error(request, "Invalid user type selected.")
-                return redirect('user_register')
 
-            if CustomUser.objects.filter(username=username).exists():
-                messages.error(request, "username already existed!")
-                return redirect('user_register')
-            elif CustomUser.objects.filter(email=email).exists():
-                messages.error(request, "email already taken")
-                return redirect('user_register')
-            else:
-                # Create a new user
-                user = CustomUser(
-                    username=username,
-                    email=email,
-                    user_type=user_type
-                )
-                user.set_password(password)
-                user.save()
-                messages.success(request, "Account created successfully")
-                return redirect('user_login')  
+        # Validate role selection
+        valid_roles = ['superadmin', 'employer', 'intern', 'employee']
+        if role not in valid_roles:
+            messages.error(request, 'Invalid role selected')
+            return redirect('user_register')
 
-    return render(request, "registration/register.html")
+        try:
+            # Create user
+            user = CustomUser.objects.create_user(username=username, email=email, password=password)
+            user.user_type = role
+            
+            # Assign role
+            if role == 'superadmin':
+                
+                user.is_superuser = True
+            elif role == 'employer':
+                user.is_staff = True
+            
+            user.save()
+            messages.success(request, 'Registration successful! Please login.')
+            return redirect('user_login')
 
-from django.db import models
+        except Exception as e:
+            messages.error(request, f'Registration failed: {str(e)}')
+            return redirect('user_register')
 
+    return render(request, 'registration/register.html', {'roles': ['superadmin', 'employer', 'intern', 'employee']})
 import json
+from django.db import models
 from django.db.models import Count
 from django.utils.timezone import now, timedelta
 
 @login_required
-def admin_dashboard(request):
-    if request.user.user_type != UserTypes.ADMIN:
+def superadmin_dashboard(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
-    users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
+    # Get all users except superadmin
+    users = CustomUser.objects.exclude(user_type=UserTypes.SUPERADMIN)
     goals = Goal.objects.all()
     attendance_records = Attend.objects.filter(datetime__gte=now()-timedelta(days=30))
+    performance_reviews = PerformanceReview.objects.all().order_by('-date')[:10]
+    notifications = Goal.objects.filter(models.Q(deadline__lte=now() + timedelta(days=3)) | models.Q(status='missed'))
+
+    # Get recent activity logs
+    recent_activities = ActivityLog.objects.all().order_by('-timestamp')[:10]
 
     # Prepare data for charts
-
-    # Pie chart: user count by user type
     user_type_counts = users.values('user_type').annotate(count=Count('id'))
     user_type_data = {ut['user_type']: ut['count'] for ut in user_type_counts}
 
-    # Bar chart: task count by status
     task_status_counts = goals.values('status').annotate(count=Count('id'))
     task_status_data = {ts['status']: ts['count'] for ts in task_status_counts}
 
-    # Line chart: attendance count by date (last 30 days)
     attendance_by_date_qs = attendance_records.extra({'date': "date(datetime)"}).values('date').annotate(count=Count('id')).order_by('date')
     attendance_by_date = {str(record['date']): record['count'] for record in attendance_by_date_qs}
 
@@ -139,12 +146,61 @@ def admin_dashboard(request):
         'user_type_data': json.dumps(user_type_data),
         'task_status_data': json.dumps(task_status_data),
         'attendance_by_date': json.dumps(attendance_by_date),
+        'performance_reviews': performance_reviews,
+        'notifications': notifications,
+        'users': users,
+        'goals': goals,
+        'attendance_records': attendance_records,
+        'recent_activities': recent_activities,
+        'user': request.user
     }
-    return render(request, "admin/admin_dashboard.html", context)
+    return render(request, "superadmin/superadmin_dashboard.html", context)
+
+@login_required
+def superadmin_users_list(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+
+    users = CustomUser.objects.all()
+    context = {
+        'users': users,
+    }
+    return render(request, "superadmin/users_list.html", context)
+
+@login_required
+def superadmin_user_add(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        user_type = request.POST.get('user_type')
+        password = request.POST.get('password')
+        password2 = request.POST.get('password2')
+
+        if password != password2:
+            messages.error(request, "Passwords do not match.")
+            return redirect('superadmin_user_add')
+
+        if CustomUser.objects.filter(username=username).exists():
+            messages.error(request, "Username already exists.")
+            return redirect('superadmin_user_add')
+
+        user = CustomUser.objects.create_user(username=username, email=email, password=password)
+        user.user_type = user_type
+        user.save()
+        messages.success(request, "User added successfully.")
+        return redirect('superadmin_users_list')
+
+    context = {
+        'user_types': UserTypes.choices,
+    }
+    return render(request, "superadmin/user_add.html", context)
 
 @login_required
 def users_list(request):
-    if request.user.user_type != UserTypes.ADMIN:
+    if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
     users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
@@ -153,6 +209,36 @@ def users_list(request):
     }
     return render(request, "admin/users_list.html", context)
 
+@login_required
+def superadmin_user_delete(request, user_id):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+
+    user = get_object_or_404(CustomUser, id=user_id)
+    user.delete()
+    messages.success(request, "User deleted successfully.")
+    return redirect('superadmin_users_list')
+
+@login_required
+def superadmin_user_edit(request, user_id):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    if request.method == 'POST':
+        user.email = request.POST.get('email')
+        user.user_type = request.POST.get('user_type')
+        user.save()
+        messages.success(request, "User updated successfully.")
+        return redirect('superadmin_users_list')
+
+    context = {
+        'user': user,
+        'user_types': UserTypes.choices,
+    }
+    return render(request, "superadmin/user_edit.html", context)
+        
 @login_required
 def tasks_list(request):
     if request.user.user_type != UserTypes.ADMIN:
@@ -198,18 +284,16 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
-            print(user.user_type)
-
             login(request, user)
             # Redirect based on user type
-            if user.user_type == UserTypes.ADMIN:
-                return redirect('admin_dashboard')
+            if user.user_type == UserTypes.SUPERADMIN:
+                return redirect('superadmin_dashboard')
             elif user.user_type == UserTypes.EMPLOYER:
                 return redirect('employer_dashboard')  
             elif user.user_type == UserTypes.EMPLOYEE:
                 return redirect('employee_dashboard')
             elif user.user_type == UserTypes.MANAGER:
-                return redirect('manager_dashboard')   
+                return redirect('superadmin_dashboard')  # Redirect MANAGER to superadmin_dashboard as merged
             elif user.user_type == UserTypes.INTERN:
                 return redirect('intern_dashboard', user_id=user.id)    
             else:
@@ -222,16 +306,7 @@ def user_login(request):
             return redirect('user_login')
 
     return render(request, "registration/login.html")
-
-
-
-
-# manager 
-def manager_dashboard(request):
-
-    employees = CustomUser.objects.filter(user_type=UserTypes.EMPLOYER)
-    interns = CustomUser.objects.filter(user_type=UserTypes.INTERN)
-    # print(request.user.user_type)
+                # print(request.user.user_type)
     context = {
         'employees': employees,
         'interns': interns,
@@ -610,3 +685,11 @@ def edit_review(request, review_id):
 
     # Render the same template with review details
     return render(request, "edit_review.html", {"review": review})
+
+def admin_dashboard(request):
+    # Add admin-specific data queries here
+    context = {
+        'total_users': User.objects.count(),
+        'recent_activities': ActivityLog.objects.all().order_by('-timestamp')[:10]
+    }
+    return render(request, 'accounts/admin_dashboard.html', context)

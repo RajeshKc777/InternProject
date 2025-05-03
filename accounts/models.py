@@ -10,9 +10,8 @@ from Employee_Performance_Review_System import settings
 class UserTypes(models.TextChoices):
     EMPLOYEE = 'employee', 'Employee'
     EMPLOYER = 'employer', 'Employer'
-    MANAGER = 'manager', 'Manager'
     INTERN = 'intern', 'Intern'
-    ADMIN = 'admin', 'Admin'
+    SUPERADMIN = 'superadmin', 'Superadmin'
     
 
 
@@ -103,4 +102,12 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"From {self.sender.username} to {self.receiver.username} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
 
+class ActivityLog(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    action = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.action} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+        
     

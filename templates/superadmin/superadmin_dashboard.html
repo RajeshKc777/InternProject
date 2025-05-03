@@ -1,0 +1,103 @@
+{% extends 'extend/base.html' %}
+{% load static %}
+{% block content %}
+<head>
+    <link rel="stylesheet" href="{% static 'css/superadmin_dashboard.css' %}">
+</head>
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <a class="navbar-brand" href="{% url 'superadmin_dashboard' %}">Superadmin</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#superadminNavbar" aria-controls="superadminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="superadminNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'superadmin_dashboard' %}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'superadmin_users_list' %}">Users List</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'superadmin_user_add' %}">Add User</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <h1>Superadmin Dashboard</h1>
+    
+    <!-- Quick Stats -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <p class="card-text">{{ users.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Active Goals</h5>
+                    <p class="card-text">{{ goals.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Attendance</h5>
+                    <p class="card-text">{{ attendance_records.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Reviews</h5>
+                    <p class="card-text">{{ performance_reviews.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">User Distribution</h5>
+                    <canvas id="userTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Task Status</h5>
+                    <canvas id="taskStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Activities</h5>
+                    <ul class="list-group">
+                        {% for activity in recent_activities %}
+                        <li class="list-group-item">{{ activity.user.username }} - {{ activity.action }} at {{ activity.timestamp|date:"Y-m-d H:i" }}</li>
+                        {% empty %}
+                        <li class="list-group-item">No recent activities.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

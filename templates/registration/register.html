@@ -5,6 +5,13 @@
 </head>
 <body>
     <h1>Register</h1>
+    {% if messages %}
+    <ul>
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     <form method="post">
         {% csrf_token %}
         <label for="username">Username:</label><br>
@@ -13,14 +20,13 @@
         <label for="email">Email:</label><br>
         <input type="email" id="email" name="email" required><br><br>
 
-        <label for="user_type">User Type:</label><br>
-        <select id="user_type" name="user_type" required>
-            <option value="">Select user type</option>
-            <option value="employee">Employee</option>
+        <label for="role">User Role:</label><br>
+        <select id="role" name="role" required>
+            <option value="">Select user role</option>
+            <option value="superadmin">Superadmin</option>
             <option value="employer">Employer</option>
-            <option value="manager">Manager</option>
             <option value="intern">Intern</option>
-            <option value="admin">Admin</option>
+            <option value="employee">Employee</option>
         </select><br><br>
 
         <label for="password">Password:</label><br>
