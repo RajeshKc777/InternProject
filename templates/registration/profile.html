@@ -1,0 +1,72 @@
+{% extends "extend/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>User Profile</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <h5>Update Personal Information</h5>
+                        <div class="mb-3">
+                            {{ profile_form.username.label_tag }}
+                            {{ profile_form.username }}
+                            {% if profile_form.username.errors %}
+                                <div class="text-danger">{{ profile_form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ profile_form.email.label_tag }}
+                            {{ profile_form.email }}
+                            {% if profile_form.email.errors %}
+                                <div class="text-danger">{{ profile_form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <h5>Change Password</h5>
+                        <div class="mb-3">
+                            {{ password_form.old_password.label_tag }}
+                            {{ password_form.old_password }}
+                            {% if password_form.old_password.errors %}
+                                <div class="text-danger">{{ password_form.old_password.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.new_password1.label_tag }}
+                            {{ password_form.new_password1 }}
+                            {% if password_form.new_password1.errors %}
+                                <div class="text-danger">{{ password_form.new_password1.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.new_password2.label_tag }}
+                            {{ password_form.new_password2 }}
+                            {% if password_form.new_password2.errors %}
+                                <div class="text-danger">{{ password_form.new_password2.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,42 +1,60 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>User Registration</title>
-</head>
-<body>
-    <h1>Register</h1>
-    {% if messages %}
-    <ul>
-        {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" name="username" required><br><br>
+{% extends "extend/base.html" %}
 
-        <label for="email">Email:</label><br>
-        <input type="email" id="email" name="email" required><br><br>
-
-        <label for="role">User Role:</label><br>
-        <select id="role" name="role" required>
-            <option value="">Select user role</option>
-            <option value="superadmin">Superadmin</option>
-            <option value="employer">Employer</option>
-            <option value="intern">Intern</option>
-            <option value="employee">Employee</option>
-        </select><br><br>
-
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" name="password" required><br><br>
-
-        <label for="password2">Confirm Password:</label><br>
-        <input type="password" id="password2" name="password2" required><br><br>
-
-        <button type="submit">Register</button>
-    </form>
-    <p>Already have an account? <a href="{% url 'user_login' %}">Login here</a>.</p>
-</body>
-</html>
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>User Registration</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required placeholder="Enter username">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="email" name="email" required placeholder="Enter email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="role" class="form-label">User Role</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="" selected disabled>Select user role</option>
+                                <option value="superadmin">Superadmin</option>
+                                <option value="employer">Employer</option>
+                                <option value="intern">Intern</option>
+                                <option value="employee">Employee</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required placeholder="Enter password">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password2" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="password2" name="password2" required placeholder="Confirm password">
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Already have an account? <a href="{% url 'user_login' %}">Login here</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

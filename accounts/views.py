@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.shortcuts import get_object_or_404
 from datetime import datetime, timezone
 from .models import CustomUser
@@ -15,8 +15,40 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from .forms import UserProfileForm, PasswordChangeForm
 
 # Removed import of User to avoid conflict with CustomUser
+
+def user_login(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            # Redirect based on user type
+            if user.user_type == UserTypes.SUPERADMIN:
+                return redirect('superadmin_dashboard')
+            elif user.user_type == UserTypes.EMPLOYER:
+                return redirect('employer_dashboard')  
+            elif user.user_type == UserTypes.EMPLOYEE:
+                return redirect('employee_dashboard')
+            elif user.user_type == UserTypes.MANAGER:
+                return redirect('superadmin_dashboard')  # Redirect MANAGER to superadmin_dashboard as merged
+            elif user.user_type == UserTypes.INTERN:
+                return redirect('intern_dashboard', user_id=user.id)    
+            else:
+                return redirect('/')
+        else: 
+            if CustomUser.objects.filter(username=username).exists():
+                messages.error(request, "Please enter correct password")
+            else:
+                messages.error(request, "Invalid login credentials")
+            return redirect('user_login')
+
+    return render(request, "registration/login.html")
 
 @login_required
 def chat_view(request, user_id):
@@ -276,44 +308,29 @@ def notifications_list(request):
     }
     return render(request, "admin/notifications_list.html", context)
 
-def user_login(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        
-        user = authenticate(request, username=username, password=password)
+@login_required
+def user_profile(request):
+    user = request.user
+    if request.method == 'POST':
+        profile_form = UserProfileForm(request.POST, instance=user)
+        password_form = PasswordChangeForm(user, request.POST)
+        if profile_form.is_valid() and password_form.is_valid():
+            profile_form.save()
+            password_form.save()
+            update_session_auth_hash(request, password_form.user)  # Important to keep user logged in after password change
+            messages.success(request, 'Your profile and password have been updated successfully.')
+            return redirect('user_profile')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        profile_form = UserProfileForm(instance=user)
+        password_form = PasswordChangeForm(user)
 
-        if user is not None:
-            login(request, user)
-            # Redirect based on user type
-            if user.user_type == UserTypes.SUPERADMIN:
-                return redirect('superadmin_dashboard')
-            elif user.user_type == UserTypes.EMPLOYER:
-                return redirect('employer_dashboard')  
-            elif user.user_type == UserTypes.EMPLOYEE:
-                return redirect('employee_dashboard')
-            elif user.user_type == UserTypes.MANAGER:
-                return redirect('superadmin_dashboard')  # Redirect MANAGER to superadmin_dashboard as merged
-            elif user.user_type == UserTypes.INTERN:
-                return redirect('intern_dashboard', user_id=user.id)    
-            else:
-                return redirect('/')
-        else: 
-            if CustomUser.objects.filter(username=username).exists():
-                messages.error(request, "Please enter correct password")
-            else:
-                messages.error(request, "Invalid login credentials")
-            return redirect('user_login')
-
-    return render(request, "registration/login.html")
-                # print(request.user.user_type)
     context = {
-        'employees': employees,
-        'interns': interns,
-        'user': request.user
-
+        'profile_form': profile_form,
+        'password_form': password_form,
     }
-    return render(request, "manager/manager_dashboard.html", context)
+    return render(request, 'registration/profile.html', context)
 
 def work_desc(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)

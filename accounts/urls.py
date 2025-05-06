@@ -32,4 +32,5 @@ urlpatterns = [
     path('notifications/', views.notifications_list, name='notifications_list'),
     path('edit_review/<int:review_id>/edit/', views.edit_review, name='edit_review'),
     path('logout/', views.logout_view, name='logout'),
+    path('profile/', views.user_profile, name='user_profile'),
 ]
