@@ -5,34 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Custom CSS - Assuming you have a main styles file now -->
+    <link rel="stylesheet" href="../../static/css/style.css">
     <style>
+        /* Additional specific styles for the login page if needed, but try to use the main style.css */
         body {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background-color: var(--color-background); /* Use color variable from style.css */
             min-height: 100vh;
             display: flex;
-            align-items: center;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.95);
-            transition: transform 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .btn-primary {
-            background: #667eea;
-            border: none;
-            border-radius: 25px;
-            padding: 10px;
-            font-weight: bold;
-            transition: background 0.3s ease;
-        }
-        .btn-primary:hover {
-            background: #764ba2;
         }
         .form-control {
             border-radius: 10px;
@@ -47,16 +28,6 @@
             color: #333;
             font-weight: 700;
         }
-        .text-muted {
-            color: #6c757d !important;
-        }
-        .message {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-        }
-        .message.success { background: #d4edda; color: #155724; }
-        .message.error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -64,7 +35,7 @@
         <div class="row justify-content-center mt-5">
             <div class="col-lg-5 col-md-6 col-sm-8">
                 <div class="card shadow-lg p-4">
-                    <div class="card-body">
+                    <div class="card-body p-5">
                         <h2 class="text-center mb-3">Welcome Back</h2>
                         <p class="text-center text-muted mb-4">Log in with your username and password</p>
 
@@ -80,22 +51,25 @@
 
                         <form method="POST" action="{% url 'user_login' %}">
                             {% csrf_token %}
-                            <div class="mb-4">
+                            <div class="form-group mb-3">
                                 <label for="username" class="form-label fw-bold">Username</label>
                                 <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required>
                             </div>
                             
-                            <div class="mb-4">
+                            <div class="form-group mb-4">
                                 <label for="password" class="form-label fw-bold">Password</label>
                                 <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100">Log In</button>
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">Log In</button>
                         </form>
 
                         <div class="text-center mt-4">
                             <p class="text-muted">Don't have an account? <a href="{% url 'user_register' %}" class="text-primary fw-bold text-decoration-none">Register Now</a></p>
                         </div>
+                    </div>
+                    <div class="card-footer text-center text-muted">
+                        &copy; 2023 Your Company Name
                     </div>
                 </div>
             </div>
@@ -104,5 +78,7 @@
 
     <!-- Bootstrap JS and dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Your custom script file if needed -->
+    <script src="../../static/js/script.js"></script>
 </body>
 </html>

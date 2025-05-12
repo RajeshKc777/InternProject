@@ -1,10 +1,26 @@
 {% extends "extend/base.html" %}
 {% load static %}
 {% block content %}
-    <!-- Page Content -->
-    <div class="container my-5">
-        <h2 class="mb-4">Admin/Manager Review Panel</h2>
+<div class="dashboard-container">
+ <aside class="sidebar">
+ <div class="sidebar-header">
+ <h2>TaskMaster</h2>
+ </div>
+ <ul class="sidebar-menu">
+ <li><a href="#">Dashboard</a></li>
+ <li><a href="#">My Tasks</a></li>
+ <li><a href="#">Projects</a></li>
+ <li><a href="#">Team</a></li>
+ </ul>
+ </aside>
 
+ <main class="main-content">
+ <header class="dashboard-header">
+ <h1>Manager Dashboard</h1>
+ <div class="user-info">
+ <span>Welcome, {{ user.username }}</span>
+ </div>
+ </header>
         <!-- Employee Table Section -->
         <div class="card p-4 shadow mb-5">
             <h4>Employee List</h4>
@@ -21,7 +37,7 @@
                         {% for employee in employees %}
                         <tr>
                             <td>{{employee.username}}</td>
-                            <td>{{ employee.user_type }}</td>
+                            <td>{{ employee.user_type|default:"N/A" }}</td>
                             <td>
                                 <a href="{% url 'work_desc' employee.id %}"button class="btn btn-primary btn-sm">View</button></a>
                             </td>
@@ -48,21 +64,43 @@
                         {% for intern in interns %}
                         <tr>
                             <td>{{intern.username}}</td>
-                            <td>{{intern.user_type}}</td>
+                            <td>{{ intern.user_type|default:"N/A" }}</td>
                             <td>
                                 <a href="{% url 'work_desc' intern.id %}"><button class="btn btn-primary btn-sm">View</button></a>
                             </td>
                         </tr>
                         {% endfor %}
-                        
+
                     </tbody>
                 </table>
             </div>
+        </div>
 
+        <!-- AJAX Example: Dynamic Task List -->
+ <div class="card p-4 shadow mb-5">
+ <h4>Recent Tasks (AJAX Example)</h4>
+ <div id="task-list">
+ <!-- Tasks will be loaded here via AJAX -->
+ Loading tasks...
+ </div>
+ </div>
+ </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script>
+ document.addEventListener('DOMContentLoaded', function() {
+ // Basic AJAX example to load tasks
+ fetch('/api/tasks/') // Replace with your actual API endpoint
+ .then(response => response.json())
+ .then(data => {
+ const taskListDiv = document.getElementById('task-list');
+ taskListDiv.innerHTML = ''; // Clear loading message
+ data.tasks.forEach(task => {
+                    taskListDiv.innerHTML += `<p>${task.title} - Due: ${task.due_date}</p>`;
+ });
+ })
+ .catch(error => console.error('Error loading tasks:', error));
+ });
+</script>
 {% endblock content %}
 

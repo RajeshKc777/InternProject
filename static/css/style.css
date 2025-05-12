@@ -1,14 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
+/* Color Palette */
+:root {
+ --primary-blue: #3B82F6; /* A bright, friendly blue */
+ --dark-blue: #1E3A8A; /* A deep, professional blue */
+ --light-gray: #F3F4F6; /* A very light gray for backgrounds */
+ --medium-gray: #D1D5DB; /* A medium gray for borders and dividers */
+ --dark-gray: #4B5563; /* A dark gray for text and icons */
+ --white: #FFFFFF;
+}
+
 ::after,
 ::before {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
-
 a {
-    text-decoration: none;
+ text-decoration: none;
 }
 
 li {
@@ -17,7 +26,11 @@ li {
 
 body {
     font-family: 'Poppins', sans-serif;
+    line-height: 1.6;
+    color: var(--dark-gray);
+ background-color: var(--light-gray);
 }
+
 
 .wrapper {
     display: flex;
@@ -30,7 +43,7 @@ body {
     width: 100%;
     overflow: hidden;
     transition: all 0.35s ease-in-out;
-    background-color: #fff;
+ background-color: var(--white);
     min-width: 0;
 }
 
@@ -40,7 +53,7 @@ body {
     z-index: 1000;
     transition: all .25s ease-in-out;
     background-color: #0e2238;
-    display: flex;
+ display: flex;
     flex-direction: column;
 }
 
@@ -52,7 +65,7 @@ body {
 .toggle-btn {
     background-color: transparent;
     cursor: pointer;
-    border: 0;
+ border: 0;
     padding: 1rem 1.5rem;
 }
 
@@ -60,11 +73,12 @@ body {
     font-size: 1.5rem;
     color: #FFF;
 }
-
+#sidebar .sidebar-logo {
+ padding: 1rem 1.5rem;
+}
 .sidebar-logo {
     margin: auto 0;
 }
-
 .sidebar-logo a {
     color: #FFF;
     font-size: 1.15rem;
@@ -92,13 +106,13 @@ body {
 }
 
 .sidebar-nav {
-    padding: 2rem 0;
+ padding: 1rem 0;
     flex: 1 1 auto;
 }
 
 a.sidebar-link {
     padding: .625rem 1.625rem;
-    color: #FFF;
+ color: #FFF;
     display: block;
     font-size: 0.9rem;
     white-space: nowrap;
@@ -112,7 +126,7 @@ a.sidebar-link {
 }
 
 a.sidebar-link:hover {
-    background-color: rgba(255, 255, 255, .075);
+ background-color: rgba(255, 255, 255, .1);
     border-left: 3px solid #3b7ddd;
 }
 
@@ -156,8 +170,8 @@ a.sidebar-link:hover {
 }
 
 .navbar {
-    background-color: #f5f5f5;
-    box-shadow: 0 0 2rem 0 rgba(33, 37, 41, .1);
+ background-color: var(--white);
+ box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .navbar-expand .navbar-collapse {
@@ -169,7 +183,48 @@ a.sidebar-link:hover {
     width: 40px;
 }
 
+/* Professional task management website styles */
 
+h1, h2, h3, h4, h5, h6 {
+ color: var(--dark-blue);
+ margin-bottom: 1rem;
+}
+
+p {
+ margin-bottom: 1rem;
+}
+
+/* Example: Add some spacing to the main content area */
+.main {
+ padding: 1.5rem;
+}
+
+/* Example: Style for cards or sections */
+.card {
+ background-color: var(--white);
+ border-radius: 0.5rem;
+ box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+ padding: 1.5rem;
+ margin-bottom: 1.5rem;
+ border: 1px solid var(--medium-gray);
+}
+
+.card-header {
+ border-bottom: 1px solid var(--medium-gray);
+ padding-bottom: 1rem;
+ margin-bottom: 1rem;
+ font-size: 1.2rem;
+ font-weight: 600;
+ color: var(--dark-blue);
+}
+
+/* Example: Button styles */
+.btn {
+ display: inline-block;
+ padding: 0.75rem 1.5rem;
+ border-radius: 0.3rem;
+ cursor: pointer;
+}
 
 @media (min-width: 768px) {
 
