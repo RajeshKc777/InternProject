@@ -1,23 +1,19 @@
-from django.shortcuts import render, redirect
-from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog, Attend
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
-from django.shortcuts import get_object_or_404
-from datetime import datetime, timezone
-from .models import CustomUser
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from .models import Attend
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import json
+from django.db import models
+from django.contrib.auth.models import User
 from .forms import UserProfileForm, PasswordChangeForm
-
-# Removed import of User to avoid conflict with CustomUser
+import json
+from datetime import datetime, timedelta
+from django.db.models import Count
 
 def user_login(request):
     if request.method == "POST":
@@ -32,20 +28,16 @@ def user_login(request):
             if user.user_type == UserTypes.SUPERADMIN:
                 return redirect('superadmin_dashboard')
             elif user.user_type == UserTypes.EMPLOYER:
-                return redirect('employer_dashboard')  
+                return redirect('employer_dashboard')
             elif user.user_type == UserTypes.EMPLOYEE:
                 return redirect('employee_dashboard')
-            elif user.user_type == UserTypes.MANAGER:
-                return redirect('superadmin_dashboard')  # Redirect MANAGER to superadmin_dashboard as merged
             elif user.user_type == UserTypes.INTERN:
-                return redirect('intern_dashboard', user_id=user.id)    
-            else:
-                return redirect('/')
-        else: 
+                return redirect('intern_dashboard')
+        else:
             if CustomUser.objects.filter(username=username).exists():
-                messages.error(request, "Please enter correct password")
+                messages.error(request, "Invalid password.")
             else:
-                messages.error(request, "Invalid login credentials")
+                messages.error(request, "Invalid username.")
             return redirect('user_login')
 
     return render(request, "registration/login.html")
@@ -55,8 +47,8 @@ def chat_view(request, user_id):
     other_user = get_object_or_404(CustomUser, id=user_id)
     if request.user == other_user:
         messages.error(request, "Cannot chat with yourself.")
-        return redirect('user_login')
-
+        return redirect('user_list')
+    
     # Fetch chat messages between the two users
     messages_qs = ChatMessage.objects.filter(
         (models.Q(sender=request.user) & models.Q(receiver=other_user)) |
@@ -102,8 +94,6 @@ def user_list_by_role(request, role):
     }
     return render(request, 'chat/user_list.html', context)
 
-
-# Create your views here.
 def user_register(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -114,27 +104,19 @@ def user_register(request):
 
         # Validate passwords match
         if password != password2:
-            messages.error(request, 'Passwords do not match')
+            messages.error(request, "Passwords do not match.")
             return redirect('user_register')
 
         # Validate role selection
-        valid_roles = ['superadmin', 'employer', 'intern', 'employee']
+        valid_roles = [choice[0] for choice in UserTypes.choices]
         if role not in valid_roles:
-            messages.error(request, 'Invalid role selected')
+            messages.error(request, "Invalid role selected.")
             return redirect('user_register')
 
         try:
             # Create user
             user = CustomUser.objects.create_user(username=username, email=email, password=password)
             user.user_type = role
-            
-            # Assign role
-            if role == 'superadmin':
-                
-                user.is_superuser = True
-            elif role == 'employer':
-                user.is_staff = True
-            
             user.save()
             messages.success(request, 'Registration successful! Please login.')
             return redirect('user_login')
@@ -143,11 +125,7 @@ def user_register(request):
             messages.error(request, f'Registration failed: {str(e)}')
             return redirect('user_register')
 
-    return render(request, 'registration/register.html', {'roles': ['superadmin', 'employer', 'intern', 'employee']})
-import json
-from django.db import models
-from django.db.models import Count
-from django.utils.timezone import now, timedelta
+    return render(request, 'registration/register.html', {'roles': [choice[0] for choice in UserTypes.choices]})
 
 @login_required
 def superadmin_dashboard(request):
@@ -157,9 +135,9 @@ def superadmin_dashboard(request):
     # Get all users except superadmin
     users = CustomUser.objects.exclude(user_type=UserTypes.SUPERADMIN)
     goals = Goal.objects.all()
-    attendance_records = Attend.objects.filter(datetime__gte=now()-timedelta(days=30))
+    attendance_records = Attend.objects.filter(datetime__gte=timezone.now()-timedelta(days=30))
     performance_reviews = PerformanceReview.objects.all().order_by('-date')[:10]
-    notifications = Goal.objects.filter(models.Q(deadline__lte=now() + timedelta(days=3)) | models.Q(status='missed'))
+    notifications = Goal.objects.filter(models.Q(deadline__lte=timezone.now() + timedelta(days=3)) | models.Q(status='missed'))
 
     # Get recent activity logs
     recent_activities = ActivityLog.objects.all().order_by('-timestamp')[:10]
@@ -235,7 +213,7 @@ def users_list(request):
     if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
-    users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
+    users = CustomUser.objects.exclude(user_type=UserTypes.SUPERADMIN)
     context = {
         'users': users,
     }
@@ -270,7 +248,7 @@ def superadmin_user_edit(request, user_id):
         'user_types': UserTypes.choices,
     }
     return render(request, "superadmin/user_edit.html", context)
-        
+
 @login_required
 def tasks_list(request):
     if request.user.user_type != UserTypes.ADMIN:
@@ -298,8 +276,7 @@ def notifications_list(request):
     if request.user.user_type != UserTypes.ADMIN:
         return redirect('user_login')
 
-    from django.utils.timezone import now, timedelta
-    upcoming_deadline = now() + timedelta(days=3)
+    upcoming_deadline = timezone.now() + timedelta(days=3)
     goals = Goal.objects.all()
     notifications = goals.filter(models.Q(deadline__lte=upcoming_deadline) | models.Q(status='missed')).order_by('deadline')
 
@@ -345,7 +322,6 @@ def work_desc(request, user_id):
         goals = request.POST.get("goal")
         feedback = request.POST.get("feedbackText")
 
-
         try:
             performance_metrics = PerformanceReview.objects.create(
                 user = user,
@@ -382,12 +358,10 @@ def work_desc(request, user_id):
 
         return redirect("work_desc", user_id=user.id)
 
-
     context = {
         'user': user,
         'performance_reviews': performance_reviews,
         'upcoming_reviews': upcoming_reviews,
-
     }
     return render(request, "manager/work_desc.html", context)
 
@@ -396,12 +370,9 @@ def performance_details(request, review_id):
     review = get_object_or_404(PerformanceReview, id=review_id)
     user = review.user  # The user associated with the review
 
-
-
     data = {
         'review': review,
         'user': user,
-
     }
 
     return render(request, "manager/performance_details.html", data)
@@ -416,8 +387,6 @@ def allReview(request, user_id):
     return render(request, "manager/allReview.html", data)
 
 # For Assing Goals
-
-
 def assign_goal(request):
     if request.method == 'POST':
         description = request.POST.get('description')
@@ -451,7 +420,6 @@ def assign_goal(request):
 def UpCommingReview(request):
     return render(request, "manager/UpCommingReview.html")
 
-
 #Employer Dashboard
 # For viewing all review
 @login_required
@@ -474,11 +442,11 @@ def employer_dashboard(request):
     }
     return render(request, "employer/employer_dashboard.html", data)
 
-
 #intern
-def intern_dashboard(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id, user_type=UserTypes.INTERN)
-    if request.user != user:
+@login_required
+def intern_dashboard(request):
+    user = request.user
+    if user.user_type != UserTypes.INTERN:
         return redirect('user_login')  # Ensure only the intern can access their dashboard
     
     performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
@@ -494,7 +462,7 @@ def intern_dashboard(request, user_id):
         'attendance_records': attendance_records,
     }
     return render(request, "intern/intern_dashboard.html", data)
-
+        
 #View performance details for intern
 def intern_performance_details(request, review_id):
     review = get_object_or_404(PerformanceReview, id=review_id)
@@ -520,7 +488,7 @@ def Self_Assessment(request):
                 feedback=self_assessment_text,
             )
             messages.success(request, "Self-assessment submitted successfully!")
-            return redirect('intern_dashboard', user_id=user.id)
+            return redirect('intern_dashboard_detail', intern_id=user.id)
         else:
             messages.error(request, "Self-assessment cannot be empty!")
     return render(request, "intern/Self_Assessment.html")
@@ -566,37 +534,60 @@ def goals(request):
     }
     return render(request, "intern/goals.html", context)
 
-from django.core.mail import send_mail
-from django.conf import settings
-
+@login_required
 def assign_goals(request):
-    users = CustomUser.objects.filter(user_type__in=[UserTypes.INTERN, UserTypes.EMPLOYER])  # Adjust as needed
+    if request.user.user_type not in [UserTypes.SUPERADMIN, UserTypes.EMPLOYER]:
+        messages.error(request, "You don't have permission to assign goals.")
+        return redirect('user_login')
+
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
         deadline = request.POST.get('deadline')
         assigned_to_id = request.POST.get('assigned_to')
-        assigned_to = CustomUser.objects.get(id=assigned_to_id)
 
-        # Create and save the goal
-        goal = Goal.objects.create(
-            title=title,
-            description=description,
-            deadline=deadline,
-            assigned_to=assigned_to
-        )
-        goal.save()
+        if not all([title, description, assigned_to_id]):
+            messages.error(request, "All fields are required.")
+            return redirect('assign_goals')
 
-        # Send email notification to assigned user
-        if assigned_to.email:
-            subject = 'New Task Assigned'
-            message = f'Hello {assigned_to.username},\n\nYou have been assigned a new task: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
-            from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
-            recipient_list = [assigned_to.email]
-            send_mail(subject, message, from_email, recipient_list)
+        try:
+            assigned_to = CustomUser.objects.get(id=assigned_to_id)
+            
+            # Create and save the goal
+            goal = Goal.objects.create(
+                title=title,
+                description=description,
+                deadline=datetime.strptime(deadline, "%Y-%m-%d") if deadline else None,
+                assigned_to=assigned_to,
+                status='in_progress',
+                progress=0
+            )
+            goal.save()
 
+            # Send email notification to assigned user
+            if assigned_to.email:
+                subject = 'New Goal Assigned'
+                message = f'Hello {assigned_to.username},\n\nYou have been assigned a new goal: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
+                from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
+                recipient_list = [assigned_to.email]
+                send_mail(subject, message, from_email, recipient_list)
 
-@login_required
+            messages.success(request, "Goal assigned successfully!")
+            return redirect('assign_goals')
+
+        except CustomUser.DoesNotExist:
+            messages.error(request, "Selected user does not exist.")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+        return redirect('assign_goals')
+
+    # Get all users who can be assigned goals (employees and interns)
+    users = CustomUser.objects.filter(user_type__in=[UserTypes.EMPLOYEE, UserTypes.INTERN])
+    context = {
+        'users': users,
+    }
+    return render(request, 'manager/assign_goals.html', context)
+
 def goals_history(request):
     user = request.user
     if user.user_type != UserTypes.INTERN:
@@ -634,47 +625,38 @@ def employee_dashboard(request):
     }
     return render(request, "employees/employee_dashboard.html", data)
 
+@login_required
 def attendance_view(request):
-    status = None
     if request.method == "POST":
-        if request.user.is_authenticated:
-            try:
-                attended_datetime = str(timezone.now())[:10]
-                print(attended_datetime)
-            except:
-                pass
-
-            attended_today = Attend.objects.filter(attender=request.user, datetime__startswith=attended_datetime)
+        try:
+            attended_date = timezone.now().date()
+            attended_today = Attend.objects.filter(attender=request.user, datetime__date=attended_date)
             
-            if str(attended_today)[10:] == "[]>":
-                status = 3
-
-            else:
-                status = 2
-
-            if status == 3:
-                attend_object = Attend(attender=request.user)
+            if not attended_today.exists():
+                attend_object = Attend.objects.create(
+                    attender=request.user,
+                    datetime=timezone.now(),
+                    status='present'
+                )
                 attend_object.save()
-                status= 1
+                messages.success(request, "Attendance marked successfully!")
+                status = 1  # Attendance marked successfully
+            else:
+                messages.info(request, "You have already marked your attendance today.")
+                status = 2  # Already marked attendance
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            status = 0  # Error occurred
+    else:
+        status = None
 
-        else: 
-            status = 0
-         # Get the attendance records for the logged-in user
-         
-    if request.user.is_authenticated:
-        attendance_records = Attend.objects.filter(attender=request.user).order_by('-datetime')
+    # Get the attendance records for the logged-in user
+    attendance_records = Attend.objects.filter(attender=request.user).order_by('-datetime') if request.user.is_authenticated else []
 
-    return render(request, "attendance/attendance.html", {'status': status ,'attendance_records': attendance_records})
-
-
-# For Logout
-def logout_view(request):
-    """
-    Logs out the user and redirects to the homepage.
-    """
-    logout(request)
-    return redirect('/')  # Redirect to the homepage or login page
-
+    return render(request, "attendance/attendance.html", {
+        'status': status,
+        'attendance_records': attendance_records
+    })
 
 def edit_review(request, review_id):
     review = get_object_or_404(Review, id=review_id)
@@ -710,3 +692,31 @@ def admin_dashboard(request):
         'recent_activities': ActivityLog.objects.all().order_by('-timestamp')[:10]
     }
     return render(request, 'accounts/admin_dashboard.html', context)
+
+def logout_view(request):
+    """
+    Logs out the user and redirects to the login page.
+    """
+    logout(request)
+    messages.success(request, "You have been successfully logged out.")
+    return redirect('user_login')
+
+@login_required
+def intern_dashboard_detail(request, intern_id):
+    user = get_object_or_404(CustomUser, id=intern_id)
+    if user.user_type != UserTypes.INTERN:
+        return redirect('user_login')
+    
+    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
+    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
+    goals_completed = goals.filter(completed=True).count()
+    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    
+    data = {
+        'user': user,
+        'performance_reviews': performance_reviews,
+        'goals': goals,
+        'goals_completed': goals_completed,
+        'attendance_records': attendance_records,
+    }
+    return render(request, "intern/intern_dashboard.html", data)

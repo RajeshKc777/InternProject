@@ -22,7 +22,7 @@
             min-height: 100vh;
         }
         #sidebar {
-            background: linear-gradient(180deg, #667eea, #764ba2);
+            background: linear-gradient(180deg, #2c3e50, #3498db);
             color: white;
             width: 250px;
             transition: width 0.3s ease;
@@ -35,7 +35,7 @@
         }
         .sidebar-link {
             color: white;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
             border-radius: 8px;
             margin: 5px 10px;
             padding: 10px;
@@ -45,6 +45,7 @@
         .sidebar-link:hover {
             background: rgba(255, 255, 255, 0.2);
             color: white;
+            transform: translateX(5px);
         }
         .sidebar-link i {
             margin-right: 10px;
@@ -136,6 +137,69 @@
         .btn-secondary:hover {
             background: #5a3e7d;
         }
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+        .task-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-in-progress { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-blocked { background: #f8d7da; color: #721c24; }
+        
+        .project-flow {
+            position: relative;
+            padding: 20px 0;
+        }
+        .flow-step {
+            position: relative;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .flow-step::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: #dee2e6;
+        }
+        .flow-step:last-child::after {
+            display: none;
+        }
+        
+        .task-card {
+            border-left: 4px solid #3498db;
+            margin-bottom: 15px;
+        }
+        .task-card.blocked { border-left-color: #dc3545; }
+        .task-card.completed { border-left-color: #28a745; }
+        .task-card.in-progress { border-left-color: #ffc107; }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 3px 6px;
+            border-radius: 50%;
+            background: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+        }
     </style>
 </head>
 
@@ -152,7 +216,7 @@
             </div>
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
-                    <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link">
+                    <a href="{% url 'intern_dashboard_detail' user.id %}" class="sidebar-link active">
                         <i class="lni lni-home"></i>
                         <span>Dashboard</span>
                     </a>
@@ -207,8 +271,9 @@
                 <div class="navbar-collapse collapse">
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
+                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0 position-relative">
                                 <img src="{% static 'img/user.png' %}" class="avatar img-fluid" alt="User Avatar">
+                                <span class="notification-badge">3</span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end rounded">
                                 <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
@@ -425,6 +490,17 @@
             const feedback = button.data('feedback');
             const modal = $(this);
             modal.find('#modalFeedback').text(feedback);
+        });
+
+        // Task Status Updates
+        document.querySelectorAll('.btn-outline-success').forEach(button => {
+            button.addEventListener('click', function() {
+                const taskRow = this.closest('tr');
+                const statusCell = taskRow.querySelector('.task-status');
+                statusCell.textContent = 'Completed';
+                statusCell.className = 'task-status status-completed';
+                this.disabled = true;
+            });
         });
     </script>
 </body>

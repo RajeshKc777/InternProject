@@ -156,12 +156,12 @@
                     {% elif user.user_type == 'employee' %}
                         <a href="{% url 'employee_dashboard' %}" class="sidebar-link active">
                     {% else %}
-                        <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link active">
-
-
+                        <a href="{% url 'intern_dashboard_detail' user.id %}" class="sidebar-link active">
                     {% endif %}
                         <i class="lni lni-dashboard"></i>
                         <span>Dashboard</span>
+                    </a>
+                </li>
                 <li class="sidebar-item">
                     <a href="{% url 'goals' %}" class="sidebar-link">
                         <i class="lni lni-target"></i>

@@ -1,1 +1,6 @@
-pip install django-unfold
+Django>=4.2.0
+django-unfold>=0.15.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
