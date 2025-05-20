@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from accounts import views
 
 
@@ -28,9 +28,17 @@ urlpatterns = [
     path('user_list/<str:role>/', views.user_list_by_role, name='user_list_by_role'),
     path('users/', views.users_list, name='users_list'),
     path('tasks/', views.tasks_list, name='tasks_list'),
-    path('attendance/', views.attendance_list, name='attendance_list'),
+    path('tasks/create/', views.task_create, name='task_create'),
+    path('tasks/<int:task_id>/', views.task_detail, name='task_detail'),
+    path('attendance/', views.attendance_list, name='attendance'),
     path('notifications/', views.notifications_list, name='notifications_list'),
     path('edit_review/<int:review_id>/edit/', views.edit_review, name='edit_review'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.user_profile, name='user_profile'),
+
+    # Add Django auth urls for password reset and other auth views
+    path('accounts/', include('django.contrib.auth.urls')),
+
+    path('workspace/', views.personal_workspace, name='personal_workspace'),
+    path('workspace/update/', views.update_workspace, name='update_workspace'),
 ]

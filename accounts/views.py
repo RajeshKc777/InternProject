@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog
+from .models import CustomUser, UserTypes, PerformanceReview, Goal, ReviewScheduling, Review, ChatMessage, ActivityLog, Workspace
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.shortcuts import get_object_or_404
@@ -15,7 +15,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .forms import UserProfileForm, PasswordChangeForm
+from .forms import TaskForm, TaskCommentForm
 
 # Removed import of User to avoid conflict with CustomUser
 
@@ -35,8 +35,7 @@ def user_login(request):
                 return redirect('employer_dashboard')  
             elif user.user_type == UserTypes.EMPLOYEE:
                 return redirect('employee_dashboard')
-            elif user.user_type == UserTypes.MANAGER:
-                return redirect('superadmin_dashboard')  # Redirect MANAGER to superadmin_dashboard as merged
+            # Removed MANAGER check as UserTypes has no MANAGER attribute
             elif user.user_type == UserTypes.INTERN:
                 return redirect('intern_dashboard', user_id=user.id)    
             else:
@@ -86,6 +85,46 @@ def send_message(request):
         chat_message.save()
         return JsonResponse({'status': 'success', 'message': 'Message sent.'})
     return JsonResponse({'status': 'fail', 'message': 'Invalid request.'})
+
+@login_required
+def task_create(request):
+    if request.method == 'POST':
+        form = TaskForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Task created successfully.')
+            return redirect('tasks_list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = TaskForm()
+    return render(request, 'admin/task_create.html', {'form': form})
+
+@login_required
+def task_detail(request, task_id):
+    task = get_object_or_404(Goal, id=task_id)
+    comments = task.comments.all().order_by('-created_at')
+
+    if request.method == 'POST':
+        comment_form = TaskCommentForm(request.POST)
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.user = request.user
+            comment.goal = task
+            comment.save()
+            messages.success(request, 'Comment added successfully.')
+            return redirect('task_detail', task_id=task.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        comment_form = TaskCommentForm()
+
+    context = {
+        'task': task,
+        'comments': comments,
+        'comment_form': comment_form,
+    }
+    return render(request, 'admin/task_detail.html', context)
 
 @login_required
 def user_list_by_role(request, role):
@@ -273,7 +312,7 @@ def superadmin_user_edit(request, user_id):
         
 @login_required
 def tasks_list(request):
-    if request.user.user_type != UserTypes.ADMIN:
+    if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
     goals = Goal.objects.all().order_by('deadline')
@@ -284,7 +323,7 @@ def tasks_list(request):
 
 @login_required
 def attendance_list(request):
-    if request.user.user_type != UserTypes.ADMIN:
+    if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
     attendance_records = Attend.objects.all().order_by('-datetime')[:50]
@@ -295,7 +334,7 @@ def attendance_list(request):
 
 @login_required
 def notifications_list(request):
-    if request.user.user_type != UserTypes.ADMIN:
+    if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
     from django.utils.timezone import now, timedelta
@@ -458,7 +497,24 @@ def UpCommingReview(request):
 def employer_dashboard(request):
     user = request.user
     if user.user_type != UserTypes.EMPLOYER:
-        return redirect('user_login')  # Ensure only employers (employees) access this dashboard
+        return redirect('user_login')  # Ensure only employers access this dashboard
+    
+    # Get or create user's workspace
+    workspace, created = Workspace.objects.get_or_create(user=user)
+    
+    # Get tasks for different statuses
+    in_progress_tasks = workspace.get_in_progress_tasks()
+    completed_tasks = workspace.get_completed_tasks()
+    missed_tasks = workspace.get_missed_tasks()
+    
+    # Get task statistics
+    total_tasks = workspace.get_tasks().count()
+    completed_count = completed_tasks.count()
+    in_progress_count = in_progress_tasks.count()
+    missed_count = missed_tasks.count()
+    
+    # Calculate completion rate
+    completion_rate = (completed_count / total_tasks * 100) if total_tasks > 0 else 0
     
     performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
     goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
@@ -467,6 +523,15 @@ def employer_dashboard(request):
     
     data = {
         'user': user,
+        'workspace': workspace,
+        'in_progress_tasks': in_progress_tasks,
+        'completed_tasks': completed_tasks,
+        'missed_tasks': missed_tasks,
+        'total_tasks': total_tasks,
+        'completed_count': completed_count,
+        'in_progress_count': in_progress_count,
+        'missed_count': missed_count,
+        'completion_rate': round(completion_rate, 1),
         'performance_reviews': performance_reviews,
         'goals': goals,
         'goals_completed': goals_completed,
@@ -481,6 +546,23 @@ def intern_dashboard(request, user_id):
     if request.user != user:
         return redirect('user_login')  # Ensure only the intern can access their dashboard
     
+    # Get or create user's workspace
+    workspace, created = Workspace.objects.get_or_create(user=user)
+    
+    # Get tasks for different statuses
+    in_progress_tasks = workspace.get_in_progress_tasks()
+    completed_tasks = workspace.get_completed_tasks()
+    missed_tasks = workspace.get_missed_tasks()
+    
+    # Get task statistics
+    total_tasks = workspace.get_tasks().count()
+    completed_count = completed_tasks.count()
+    in_progress_count = in_progress_tasks.count()
+    missed_count = missed_tasks.count()
+    
+    # Calculate completion rate
+    completion_rate = (completed_count / total_tasks * 100) if total_tasks > 0 else 0
+    
     performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
     goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
     goals_completed = goals.filter(completed=True).count()
@@ -488,6 +570,15 @@ def intern_dashboard(request, user_id):
     
     data = {
         'user': user,
+        'workspace': workspace,
+        'in_progress_tasks': in_progress_tasks,
+        'completed_tasks': completed_tasks,
+        'missed_tasks': missed_tasks,
+        'total_tasks': total_tasks,
+        'completed_count': completed_count,
+        'in_progress_count': in_progress_count,
+        'missed_count': missed_count,
+        'completion_rate': round(completion_rate, 1),
         'performance_reviews': performance_reviews,
         'goals': goals,
         'goals_completed': goals_completed,
@@ -710,3 +801,50 @@ def admin_dashboard(request):
         'recent_activities': ActivityLog.objects.all().order_by('-timestamp')[:10]
     }
     return render(request, 'accounts/admin_dashboard.html', context)
+
+@login_required
+def personal_workspace(request):
+    """View for managing personal workspace and tasks."""
+    # Get or create user's workspace
+    workspace, created = Workspace.objects.get_or_create(user=request.user)
+    
+    # Get tasks for different statuses
+    in_progress_tasks = workspace.get_in_progress_tasks()
+    completed_tasks = workspace.get_completed_tasks()
+    missed_tasks = workspace.get_missed_tasks()
+    
+    # Get task statistics
+    total_tasks = workspace.get_tasks().count()
+    completed_count = completed_tasks.count()
+    in_progress_count = in_progress_tasks.count()
+    missed_count = missed_tasks.count()
+    
+    # Calculate completion rate
+    completion_rate = (completed_count / total_tasks * 100) if total_tasks > 0 else 0
+    
+    context = {
+        'workspace': workspace,
+        'in_progress_tasks': in_progress_tasks,
+        'completed_tasks': completed_tasks,
+        'missed_tasks': missed_tasks,
+        'total_tasks': total_tasks,
+        'completed_count': completed_count,
+        'in_progress_count': in_progress_count,
+        'missed_count': missed_count,
+        'completion_rate': round(completion_rate, 1),
+    }
+    
+    return render(request, 'workspace/personal_workspace.html', context)
+
+@login_required
+def update_workspace(request):
+    """View for updating workspace settings."""
+    if request.method == 'POST':
+        workspace = request.user.workspace
+        workspace.name = request.POST.get('name', workspace.name)
+        workspace.description = request.POST.get('description', workspace.description)
+        workspace.save()
+        messages.success(request, 'Workspace updated successfully!')
+        return redirect('personal_workspace')
+    
+    return render(request, 'workspace/update_workspace.html', {'workspace': request.user.workspace})

@@ -57,6 +57,19 @@
         }
         .message.success { background: #d4edda; color: #155724; }
         .message.error { background: #f8d7da; color: #721c24; }
+        .login-links {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .login-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 0 10px;
+        }
+        .login-links a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +105,11 @@
 
                             <button type="submit" class="btn btn-primary w-100">Log In</button>
                         </form>
+
+                        <div class="login-links">
+                            <a href="{% url 'password_reset' %}">Forgot Password?</a> |
+                            <a href="mailto:support@example.com">Contact Support</a>
+                        </div>
 
                         <div class="text-center mt-4">
                             <p class="text-muted">Don't have an account? <a href="{% url 'user_register' %}" class="text-primary fw-bold text-decoration-none">Register Now</a></p>

@@ -1,0 +1,52 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <a href="{% url 'tasks_list' %}" class="btn btn-secondary mb-3">Back to Tasks</a>
+    <h2>Task Detail</h2>
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>{{ task.title }}</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Description:</strong> {{ task.description }}</p>
+            <p><strong>Assigned To:</strong> {{ task.assigned_to.username }}</p>
+            <p><strong>Status:</strong> {{ task.status|title }}</p>
+            <p><strong>Progress:</strong> {{ task.progress }}%</p>
+            <p><strong>Deadline:</strong> {{ task.deadline|date:"Y-m-d H:i" }}</p>
+            <p><strong>Priority:</strong> {{ task.priority|title }}</p>
+            {% if task.attachment %}
+            <p><strong>Attachment:</strong> <a href="{{ task.attachment.url }}" target="_blank">Download</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <h4>Comments</h4>
+    <div class="mb-3">
+        {% for comment in comments %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <p>{{ comment.comment }}</p>
+                <small class="text-muted">By {{ comment.user.username }} on {{ comment.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+        </div>
+        {% empty %}
+        <p>No comments yet.</p>
+        {% endfor %}
+    </div>
+
+    <h5>Add a Comment</h5>
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {{ comment_form.non_field_errors }}
+        <div class="mb-3">
+            {{ comment_form.comment.label_tag }}
+            {{ comment_form.comment }}
+            {% for error in comment_form.comment.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Add Comment</button>
+    </form>
+</div>
+{% endblock %}

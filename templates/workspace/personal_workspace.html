@@ -1,0 +1,162 @@
+{% extends "extend/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Workspace Header -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">{{ workspace.name }}</h2>
+                        <a href="{% url 'update_workspace' %}" class="btn btn-primary">
+                            <i class="fas fa-cog"></i> Edit Workspace
+                        </a>
+                    </div>
+                    {% if workspace.description %}
+                    <p class="text-muted mt-2">{{ workspace.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="col-12 mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Tasks</h5>
+                            <h2 class="mb-0">{{ total_tasks }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Completed</h5>
+                            <h2 class="mb-0">{{ completed_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">In Progress</h5>
+                            <h2 class="mb-0">{{ in_progress_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Missed</h5>
+                            <h2 class="mb-0">{{ missed_count }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Progress</h5>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ completion_rate }}%" 
+                             aria-valuenow="{{ completion_rate }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ completion_rate }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Sections -->
+        <div class="col-12">
+            <div class="row">
+                <!-- In Progress Tasks -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="mb-0">In Progress</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for task in in_progress_tasks %}
+                            <div class="task-item mb-3 p-3 border rounded">
+                                <h6>{{ task.title }}</h6>
+                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">{{ task.priority }}</span>
+                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
+                                </div>
+                                <div class="progress mt-2" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ task.progress }}%" 
+                                         aria-valuenow="{{ task.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No tasks in progress</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Completed Tasks -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Completed</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for task in completed_tasks %}
+                            <div class="task-item mb-3 p-3 border rounded">
+                                <h6>{{ task.title }}</h6>
+                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-success">Completed</span>
+                                    <small class="text-muted">Completed: {{ task.updated_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No completed tasks</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Missed Tasks -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">Missed</h5>
+                        </div>
+                        <div class="card-body">
+                            {% for task in missed_tasks %}
+                            <div class="task-item mb-3 p-3 border rounded">
+                                <h6>{{ task.title }}</h6>
+                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-danger">Missed</span>
+                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted">No missed tasks</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

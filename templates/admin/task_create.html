@@ -1,0 +1,75 @@
+{% extends "extend/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Create Task</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="mb-3">
+            {{ form.title.label_tag }}
+            {{ form.title }}
+            {% for error in form.title.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.description.label_tag }}
+            {{ form.description }}
+            {% for error in form.description.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.assigned_to.label_tag }}
+            {{ form.assigned_to }}
+            {% for error in form.assigned_to.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.deadline.label_tag }}
+            {{ form.deadline }}
+            {% for error in form.deadline.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.priority.label_tag }}
+            {{ form.priority }}
+            {% for error in form.priority.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.attachment.label_tag }}
+            {{ form.attachment }}
+            {% for error in form.attachment.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.status.label_tag }}
+            {{ form.status }}
+            {% for error in form.status.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="mb-3">
+            {{ form.progress.label_tag }}
+            {{ form.progress }}
+            {% for error in form.progress.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div class="form-check mb-3">
+            {{ form.completed }}
+            {{ form.completed.label_tag }}
+            {% for error in form.completed.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Create Task</button>
+    </form>
+</div>
+{% endblock %}
