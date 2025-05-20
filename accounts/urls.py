@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from accounts import views
+from django.contrib.auth import views as auth_views
 
 
 urlpatterns = [
@@ -37,7 +38,11 @@ urlpatterns = [
 
    
 
-    path('attendance/', views.attendance_view, name="attendance")
+    path('attendance/', views.attendance_view, name="attendance"),
     
+    path('change-password/', auth_views.PasswordChangeView.as_view(
+        template_name='change_password.html',
+        success_url='/dashboard/'
+    ), name='change_password'),
 
 ]
