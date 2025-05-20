@@ -466,6 +466,16 @@ def change_password(request):
             request.user.save()
             update_session_auth_hash(request, request.user)  # Keep user logged in
             messages.success(request, "Password changed successfully.")
-            return redirect("change_password")
+            # Redirect to dashboard based on user role
+            if request.user.user_type == UserTypes.EMPLOYER:
+                return redirect('employer_dashboard')
+            elif request.user.user_type == UserTypes.EMPLOYEE:
+                return redirect('employee_dashboard')
+            elif request.user.user_type == UserTypes.MANAGER:
+                return redirect('manager_dashboard')
+            elif request.user.user_type == UserTypes.INTERN:
+                return redirect('intern_dashboard', user_id=request.user.id)
+            else:
+                return redirect('/')
 
     return render(request, "registration/change_password.html")
