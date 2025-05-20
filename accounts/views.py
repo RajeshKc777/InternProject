@@ -19,8 +19,19 @@ from .forms import TaskForm, TaskCommentForm
 from django.db import models
 from django.db.models import Count
 from django.utils.timezone import now, timedelta
+from django.contrib.auth.forms import PasswordChangeForm
+from django import forms
 
-# Removed import of User to avoid conflict with CustomUser
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'first_name', 'last_name']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
 
 def user_login(request):
     if request.method == "POST":
@@ -36,9 +47,6 @@ def user_login(request):
                 return redirect('superadmin_dashboard')
             elif user.user_type == UserTypes.EMPLOYER:
                 return redirect('employer_dashboard')  
-            elif user.user_type == UserTypes.EMPLOYEE:
-                return redirect('employee_dashboard')
-            # Removed MANAGER check as UserTypes has no MANAGER attribute
             elif user.user_type == UserTypes.INTERN:
                 return redirect('intern_dashboard', user_id=user.id)    
             else:
@@ -160,7 +168,7 @@ def user_register(request):
             return redirect('user_register')
 
         # Validate role selection
-        valid_roles = ['superadmin', 'employer', 'intern', 'employee']
+        valid_roles = ['superadmin', 'employer', 'intern']
         if role not in valid_roles:
             messages.error(request, 'Invalid role selected')
             return redirect('user_register')
@@ -185,7 +193,7 @@ def user_register(request):
             messages.error(request, f'Registration failed: {str(e)}')
             return redirect('user_register')
 
-    return render(request, 'registration/register.html', {'roles': ['superadmin', 'employer', 'intern', 'employee']})
+    return render(request, 'registration/register.html', {'roles': ['superadmin', 'employer', 'intern']})
 
 @login_required
 def superadmin_dashboard(request):
@@ -729,33 +737,76 @@ def attendance_view(request):
     if request.method == "POST":
         if request.user.is_authenticated:
             try:
-                attended_datetime = str(timezone.now())[:10]
-                print(attended_datetime)
-            except:
-                pass
-
-            attended_today = Attend.objects.filter(attender=request.user, datetime__startswith=attended_datetime)
-            
-            if str(attended_today)[10:] == "[]>":
-                status = 3
-
-            else:
-                status = 2
-
-            if status == 3:
-                attend_object = Attend(attender=request.user)
-                attend_object.save()
-                status= 1
-
-        else: 
-            status = 0
-         # Get the attendance records for the logged-in user
-         
+                current_date = timezone.now().date()
+                # Check if user has already marked attendance today
+                existing_attendance = Attend.objects.filter(
+                    attender=request.user,
+                    datetime__date=current_date
+                ).first()
+                
+                if existing_attendance:
+                    status = 2  # Already marked attendance today
+                else:
+                    # Create new attendance record
+                    attend_object = Attend(
+                        attender=request.user,
+                        datetime=timezone.now()
+                    )
+                    attend_object.save()
+                    status = 1  # Successfully marked attendance
+            except Exception as e:
+                status = 0  # Error occurred
+                messages.error(request, f"Error marking attendance: {str(e)}")
+        else:
+            status = 0  # User not authenticated
+    
+    # Get the attendance records for the logged-in user
     if request.user.is_authenticated:
         attendance_records = Attend.objects.filter(attender=request.user).order_by('-datetime')
+    else:
+        attendance_records = []
 
-    return render(request, "attendance/attendance.html", {'status': status ,'attendance_records': attendance_records})
+    context = {
+        'status': status,
+        'attendance_records': attendance_records,
+        'today': timezone.now().date()
+    }
+    return render(request, "attendance/attendance.html", context)
 
+@login_required
+def admin_attendance_view(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        messages.error(request, "You don't have permission to view this page.")
+        return redirect('user_login')
+    
+    # Get all attendance records
+    attendance_records = Attend.objects.all().order_by('-datetime')
+    
+    # Get attendance statistics
+    total_attendance = attendance_records.count()
+    today_attendance = attendance_records.filter(datetime__date=timezone.now().date()).count()
+    
+    # Get attendance by user
+    user_attendance = {}
+    for record in attendance_records:
+        user = record.attender
+        if user not in user_attendance:
+            user_attendance[user] = {
+                'total': 0,
+                'today': False
+            }
+        user_attendance[user]['total'] += 1
+        if record.datetime.date() == timezone.now().date():
+            user_attendance[user]['today'] = True
+    
+    context = {
+        'attendance_records': attendance_records,
+        'total_attendance': total_attendance,
+        'today_attendance': today_attendance,
+        'user_attendance': user_attendance,
+        'today': timezone.now().date()
+    }
+    return render(request, "admin/attendance_list.html", context)
 
 # For Logout
 def logout_view(request):

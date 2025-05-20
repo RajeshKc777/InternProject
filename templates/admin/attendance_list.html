@@ -1,24 +1,106 @@
 {% extends "extend/base.html" %}
 {% load static %}
+
 {% block content %}
 <div class="container mt-4">
-    <a href="javascript:history.back()" class="btn btn-secondary mb-3">Back</a>
-    <h2>Recent Attendance Records</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>DateTime</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in attendance_records %}
-            <tr>
-                <td>{{ record.attender.username }}</td>
-                <td>{{ record.datetime }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Attendance Overview</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Attendance</h5>
+                                    <h2 class="card-text">{{ total_attendance }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Today's Attendance</h5>
+                                    <h2 class="card-text">{{ today_attendance }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Date</h5>
+                                    <h2 class="card-text">{{ today|date:"F d, Y" }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-3">User Attendance Status</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Total Attendance</th>
+                                    <th>Today's Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user, stats in user_attendance.items %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ stats.total }}</td>
+                                    <td>
+                                        {% if stats.today %}
+                                            <span class="badge bg-success">Present</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Detailed Attendance Records</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    <td>{{ record.attender.username }}</td>
+                                    <td>{{ record.datetime|date:"F d, Y" }}</td>
+                                    <td>{{ record.datetime|date:"h:i A" }}</td>
+                                    <td>
+                                        {% if record.datetime.date == today %}
+                                            <span class="badge bg-success">Today</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Marked</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No attendance records found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
