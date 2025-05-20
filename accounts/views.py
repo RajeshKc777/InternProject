@@ -445,3 +445,27 @@ def edit_review(request, review_id):
 
     # Render the same template with review details
     return render(request, "edit_review.html", {"review": review})
+
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
+
+@login_required
+def change_password(request):
+    if request.method == "POST":
+        current_password = request.POST.get("current_password")
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if not request.user.check_password(current_password):
+            messages.error(request, "Current password is incorrect.")
+        elif new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+        else:
+            request.user.set_password(new_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  # Keep user logged in
+            messages.success(request, "Password changed successfully.")
+            return redirect("change_password")
+
+    return render(request, "registration/change_password.html")
