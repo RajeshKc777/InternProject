@@ -2,234 +2,196 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12 mb-4">
-            <h2 class="fw-bold">Employer Dashboard</h2>
+<div class="container mt-4">
+    <!-- Task Overview Section -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Tasks</h5>
+                    <h2 class="mb-0">{{ total_tasks }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h2 class="mb-0">{{ completed_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">In Progress</h5>
+                    <h2 class="mb-0">{{ in_progress_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Missed</h5>
+                    <h2 class="mb-0">{{ missed_count }}</h2>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Overview Cards -->
-    <div class="row g-4 mb-4">
-        <!-- Workspace Overview -->
-        <div class="col-12 col-md-4">
-            <div class="card">
-                <div class="card-body py-4">
-                    <h5 class="mb-2 fw-bold">Workspace Overview</h5>
-                    <p class="mb-2">Task Progress</p>
-                    <div class="mb-0">
-                        <span class="fw-bold text-primary">
-                            {{ workspace.get_tasks.count }} Total Tasks
-                        </span>
-                        <div class="progress mt-2" style="height: 5px;">
-                            <div class="progress-bar bg-success" role="progressbar" 
-                                 style="width: {{ completion_rate }}%" 
-                                 aria-valuenow="{{ completion_rate }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100"></div>
-                        </div>
-                        <small class="text-muted">{{ completion_rate }}% Complete</small>
-                    </div>
-                    <a href="{% url 'personal_workspace' %}" class="btn btn-primary btn-sm mt-3">View Workspace</a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Performance Reviews -->
-        <div class="col-12 col-md-4">
-            <div class="card">
-                <div class="card-body py-4">
-                    <h5 class="mb-2 fw-bold">Performance Reviews</h5>
-                    <p class="mb-2">Recent Reviews</p>
-                    <div class="mb-0">
-                        <span class="fw-bold text-success">
-                            {{ performance_reviews|length }} Reviews
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Goals Progress -->
-        <div class="col-12 col-md-4">
-            <div class="card">
-                <div class="card-body py-4">
-                    <h5 class="mb-2 fw-bold">Goals Progress</h5>
-                    <p class="mb-2">Assigned Goals</p>
-                    <div class="mb-0">
-                        <span class="fw-bold text-primary">
-                            {{ goals|length }} Goals ({{ goals_completed }} Completed)
-                        </span>
-                    </div>
+    <!-- Overall Progress -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Overall Progress</h4>
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar {% if completion_rate == 100 %}bg-success{% elif completion_rate > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ completion_rate }}%" 
+                     aria-valuenow="{{ completion_rate }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ completion_rate }}%
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Recent Tasks Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Recent Tasks</h5>
-                    <div class="row">
-                        <!-- In Progress Tasks -->
-                        <div class="col-md-4">
-                            <h6 class="mb-3 fw-bold">In Progress</h6>
-                            {% for task in in_progress_tasks %}
-                            <div class="task-item mb-3 p-3 border rounded">
-                                <h6>{{ task.title }}</h6>
-                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-primary">{{ task.priority }}</span>
-                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
-                                </div>
-                                <div class="progress mt-2" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: {{ task.progress }}%" 
-                                         aria-valuenow="{{ task.progress }}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100"></div>
-                                </div>
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title mb-4">Recent Tasks</h4>
+            {% for task in in_progress_tasks %}
+            <div class="task-item mb-4 p-3 border rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-2">
+                            {{ task.title }}
+                            <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ task.priority|title }}
+                            </span>
+                        </h5>
+                        <p class="text-muted mb-2">{{ task.description|truncatewords:30 }}</p>
+                        <p class="mb-2">
+                            <i class="lni lni-calendar"></i> Deadline: {{ task.deadline|date:"M d, Y H:i" }}
+                        </p>
+                        
+                        <!-- Task Progress -->
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar {% if task.progress == 100 %}bg-success{% elif task.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ task.progress }}%" 
+                                 aria-valuenow="{{ task.progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ task.progress }}%
                             </div>
-                            {% empty %}
-                            <p class="text-muted">No tasks in progress</p>
-                            {% endfor %}
                         </div>
 
-                        <!-- Completed Tasks -->
-                        <div class="col-md-4">
-                            <h6 class="mb-3 fw-bold">Completed</h6>
-                            {% for task in completed_tasks %}
-                            <div class="task-item mb-3 p-3 border rounded">
-                                <h6>{{ task.title }}</h6>
-                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                        <!-- Checkpoints Preview -->
+                        <div class="checkpoints-preview mt-3">
+                            <h6 class="mb-3">Checkpoints ({{ task.checkpoints.count }})</h6>
+                            {% for checkpoint in task.checkpoints.all|slice:":3" %}
+                            <div class="checkpoint-item mb-2 p-2 border rounded {% if checkpoint.is_completed %}bg-light{% endif %}">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-success">Completed</span>
-                                    <small class="text-muted">Completed: {{ task.updated_at|date:"M d, Y" }}</small>
-                                </div>
-                            </div>
-                            {% empty %}
-                            <p class="text-muted">No completed tasks</p>
-                            {% endfor %}
-                        </div>
-
-                        <!-- Missed Tasks -->
-                        <div class="col-md-4">
-                            <h6 class="mb-3 fw-bold">Missed</h6>
-                            {% for task in missed_tasks %}
-                            <div class="task-item mb-3 p-3 border rounded">
-                                <h6>{{ task.title }}</h6>
-                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge bg-danger">Missed</span>
-                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
-                                </div>
-                            </div>
-                            {% empty %}
-                            <p class="text-muted">No missed tasks</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="text-center mt-3">
-                        <a href="{% url 'personal_workspace' %}" class="btn btn-primary">View All Tasks</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Performance Reviews Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Recent Performance Reviews</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Productivity</th>
-                                    <th>Punctuality</th>
-                                    <th>Collaboration</th>
-                                    <th>Feedback</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for review in performance_reviews %}
-                                <tr>
-                                    <td>{{ review.date|date:"M d, Y" }}</td>
-                                    <td>{{ review.productivity_score }}</td>
-                                    <td>{{ review.punctuality_score }}</td>
-                                    <td>{{ review.collaboration_score }}</td>
-                                    <td>{{ review.feedback|truncatechars:50 }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">No reviews available</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Goals Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Your Goals</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Status</th>
-                                    <th>Progress</th>
-                                    <th>Deadline</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for goal in goals %}
-                                <tr>
-                                    <td>{{ goal.title }}</td>
-                                    <td>
-                                        <span class="badge {% if goal.status == 'completed' %}bg-success{% elif goal.status == 'in_progress' %}bg-warning{% else %}bg-danger{% endif %}">
-                                            {{ goal.status|title }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="progress" style="height: 5px;">
-                                            <div class="progress-bar" role="progressbar" 
-                                                 style="width: {{ goal.progress }}%" 
-                                                 aria-valuenow="{{ goal.progress }}" 
-                                                 aria-valuemin="0" 
-                                                 aria-valuemax="100"></div>
+                                    <div>
+                                        <h6 class="mb-1">{{ checkpoint.title }}</h6>
+                                        <p class="text-muted mb-1 small">{{ checkpoint.description|truncatewords:20 }}</p>
+                                        {% if checkpoint.is_completed %}
+                                        <div class="completion-details">
+                                            <small class="text-success">
+                                                <i class="lni lni-checkmark-circle"></i> Completed
+                                                {% if checkpoint.document %}
+                                                <a href="{{ checkpoint.document.url }}" target="_blank" class="ms-2">
+                                                    <i class="lni lni-file"></i> View Document
+                                                </a>
+                                                {% endif %}
+                                            </small>
+                                            {% if checkpoint.completion_comment %}
+                                            <div class="mt-1">
+                                                <small class="text-muted">Completion Notes:</small>
+                                                <p class="mb-0 small">{{ checkpoint.completion_comment }}</p>
+                                            </div>
+                                            {% endif %}
+                                            <small class="text-muted d-block mt-1">
+                                                Completed by: {{ checkpoint.completed_by.get_full_name|default:checkpoint.completed_by.username }}
+                                                on {{ checkpoint.completed_at|date:"M d, Y H:i" }}
+                                            </small>
                                         </div>
-                                        <small>{{ goal.progress }}%</small>
-                                    </td>
-                                    <td>{{ goal.deadline|date:"M d, Y" }}</td>
-                                    <td>
-                                        <a href="{% url 'task_detail' goal.id %}" class="btn btn-sm btn-primary">View Details</a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">No goals assigned</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                        {% else %}
+                                        <div class="pending-details">
+                                            <small class="text-warning">
+                                                <i class="lni lni-circle-minus"></i> Pending
+                                            </small>
+                                            <div class="mt-1">
+                                                <small class="text-muted">Assigned to: {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</small>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-info">{{ checkpoint.progress_value }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if task.checkpoints.count > 3 %}
+                            <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                View All Checkpoints
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="activity-log mt-3">
+                            <h6 class="mb-3">Recent Activity</h6>
+                            {% for activity in task.activities.all|slice:":3" %}
+                            <div class="activity-item mb-2 p-2 border rounded">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="lni lni-{% if activity.activity_type == 'comment' %}comments{% elif activity.activity_type == 'checkpoint' %}checkmark-circle{% else %}file{% endif %}"></i>
+                                            {{ activity.get_activity_type_display }}
+                                        </small>
+                                        <p class="mb-1 small">{{ activity.description }}</p>
+                                        <small class="text-muted">
+                                            By {{ activity.user.get_full_name|default:activity.user.username }}
+                                            on {{ activity.created_at|date:"M d, Y H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if task.activities.count > 3 %}
+                            <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-secondary mt-2">
+                                View All Activity
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="alert alert-info">
+                <i class="lni lni-information"></i>
+                No tasks in progress at the moment.
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            alert.style.display = 'none';
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}
 {% endblock %}

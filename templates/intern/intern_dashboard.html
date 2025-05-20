@@ -1,556 +1,180 @@
+{% extends 'extend/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Intern Dashboard</title>
-    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
-        crossorigin="anonymous"
-    />
-    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-    <style>
-        body {
-            background: #f4f7fc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        #sidebar {
-            background: linear-gradient(180deg, #667eea, #764ba2);
-            color: white;
-            width: 250px;
-            transition: width 0.3s ease;
-        }
-        .sidebar-logo a {
-            color: white;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .sidebar-link {
-            color: white;
-            transition: background 0.3s ease;
-            border-radius: 8px;
-            margin: 5px 10px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-        }
-        .sidebar-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        .sidebar-link i {
-            margin-right: 10px;
-        }
-        .toggle-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-        }
-        .main {
-            flex-grow: 1;
-            background: #fff;
-        }
-        .navbar {
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #667eea;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .card-body {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        }
-        h3 {
-            color: #333;
-            font-weight: 700;
-        }
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        .table thead {
-            background: #667eea;
-            color: white;
-        }
-        .table-striped tbody tr:nth-of-type(odd) {
-            background: #f8f9fa;
-        }
-        .footer {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            padding: 79px 0;
-            position: relative;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-        }
-        .footer a {
-            color: #fff;
-            text-decoration: none;
-            transition: color 0.3s ease, transform 0.3s ease;
-        }
-        .footer a:hover {
-            color: #e9ecef;
-            transform: translateY(-2px);
-        }
-        .footer .footer-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-        .footer .list-inline-item {
-            margin: 0 15px;
-        }
-        .modal-content {
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-        .modal-header {
-            background: #667eea;
-            color: white;
-            border-bottom: none;
-        }
-        .btn-secondary {
-            background: #764ba2;
-            border: none;
-        }
-        .btn-secondary:hover {
-            background: #5a3e7d;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="wrapper">
-        <aside id="sidebar">
-            <div class="d-flex align-items-center p-3">
-                <button class="toggle-btn" type="button">
-                    <i class="lni lni-grid-alt"></i>
-                </button>
-                <div class="sidebar-logo ms-2">
-                    <a href="#">{{ user.username }} ({{ user.user_type|title }})</a>
-                </div>
-            </div>
-            <ul class="sidebar-nav">
-                <li class="sidebar-item">
-                    <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link">
-                        <i class="lni lni-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'personal_workspace' %}" class="sidebar-link">
-                        <i class="lni lni-briefcase"></i>
-                        <span>My Workspace</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'goals' %}" class="sidebar-link">
-                        <i class="lni lni-target"></i>
-                        <span>Goals</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'Self_Assessment' %}" class="sidebar-link">
-                        <i class="lni lni-clipboard"></i>
-                        <span>Self-Assessment</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'attendance' %}" class="sidebar-link">
-                        <i class="lni lni-calendar"></i>
-                        <span>My Attendance</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'logout' %}" class="sidebar-link">
-                        <i class="lni lni-exit"></i>
-                        <span>Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </aside>
-
-        <!-- Feedback Modal -->
-        <div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="feedbackModalLabel">Manager Feedback</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p id="modalFeedback"></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
+{% block content %}
+<div class="container mt-4">
+    <!-- Task Overview Section -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Tasks</h5>
+                    <h2 class="mb-0">{{ total_tasks }}</h2>
                 </div>
             </div>
         </div>
-
-        <div class="main">
-            <nav class="navbar navbar-expand px-4 py-3">
-                <div class="navbar-collapse collapse">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
-                                <img src="{% static 'img/user.png' %}" class="avatar img-fluid" alt="User Avatar" />
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end rounded">
-                                <a href="{% url 'logout' %}" class="dropdown-item">Logout</a>
-                            </div>
-                        </li>
-                    </ul>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h2 class="mb-0">{{ completed_count }}</h2>
                 </div>
-            </nav>
-            <main class="content px-4 py-4">
-                <div class="container-fluid">
-                    <h3 class="fw-bold fs-4 mb-4">Intern Dashboard</h3>
-                    <div class="row g-4">
-                        <!-- Workspace Overview -->
-                        <div class="col-12 col-md-4">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-2 fw-bold">Workspace Overview</h5>
-                                    <p class="mb-2">Task Progress</p>
-                                    <div class="mb-0">
-                                        <span class="fw-bold text-primary">
-                                            {{ workspace.get_tasks.count }} Total Tasks
-                                        </span>
-                                        <div class="progress mt-2" style="height: 5px;">
-                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                 style="width: {{ completion_rate }}%" 
-                                                 aria-valuenow="{{ completion_rate }}" 
-                                                 aria-valuemin="0" 
-                                                 aria-valuemax="100"></div>
-                                        </div>
-                                        <small class="text-muted">{{ completion_rate }}% Complete</small>
-                                    </div>
-                                    <a href="{% url 'personal_workspace' %}" class="btn btn-primary btn-sm mt-3">View Workspace</a>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Performance Reviews -->
-                        <div class="col-12 col-md-4">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-2 fw-bold">Performance Reviews</h5>
-                                    <p class="mb-2">Recent Reviews</p>
-                                    <div class="mb-0">
-                                        <span class="fw-bold text-success">
-                                            {{ performance_reviews|length }} Reviews
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Goals Progress -->
-                        <div class="col-12 col-md-4">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-2 fw-bold">Goals Progress</h5>
-                                    <p class="mb-2">Assigned Goals</p>
-                                    <div class="mb-0">
-                                        <span class="fw-bold text-primary">
-                                            {{ goals|length }} Goals ({{ goals_completed }} Completed)
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Workspace Tasks Section -->
-                    <h3 class="fw-bold fs-4 mt-5 mb-3">Recent Tasks</h3>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <div class="row">
-                                        <!-- In Progress Tasks -->
-                                        <div class="col-md-4">
-                                            <h5 class="mb-3 fw-bold">In Progress</h5>
-                                            {% for task in in_progress_tasks %}
-                                            <div class="task-item mb-3 p-3 border rounded">
-                                                <h6>{{ task.title }}</h6>
-                                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-primary">{{ task.priority }}</span>
-                                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
-                                                </div>
-                                                <div class="progress mt-2" style="height: 5px;">
-                                                    <div class="progress-bar" role="progressbar" 
-                                                         style="width: {{ task.progress }}%" 
-                                                         aria-valuenow="{{ task.progress }}" 
-                                                         aria-valuemin="0" 
-                                                         aria-valuemax="100"></div>
-                                                </div>
-                                            </div>
-                                            {% empty %}
-                                            <p class="text-muted">No tasks in progress</p>
-                                            {% endfor %}
-                                        </div>
-
-                                        <!-- Completed Tasks -->
-                                        <div class="col-md-4">
-                                            <h5 class="mb-3 fw-bold">Completed</h5>
-                                            {% for task in completed_tasks %}
-                                            <div class="task-item mb-3 p-3 border rounded">
-                                                <h6>{{ task.title }}</h6>
-                                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-success">Completed</span>
-                                                    <small class="text-muted">Completed: {{ task.updated_at|date:"M d, Y" }}</small>
-                                                </div>
-                                            </div>
-                                            {% empty %}
-                                            <p class="text-muted">No completed tasks</p>
-                                            {% endfor %}
-                                        </div>
-
-                                        <!-- Missed Tasks -->
-                                        <div class="col-md-4">
-                                            <h5 class="mb-3 fw-bold">Missed</h5>
-                                            {% for task in missed_tasks %}
-                                            <div class="task-item mb-3 p-3 border rounded">
-                                                <h6>{{ task.title }}</h6>
-                                                <p class="small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span class="badge bg-danger">Missed</span>
-                                                    <small class="text-muted">Due: {{ task.deadline|date:"M d, Y" }}</small>
-                                                </div>
-                                            </div>
-                                            {% empty %}
-                                            <p class="text-muted">No missed tasks</p>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                    <div class="text-center mt-3">
-                                        <a href="{% url 'personal_workspace' %}" class="btn btn-primary">View All Tasks</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Sections -->
-                    <h3 class="fw-bold fs-4 mt-5 mb-3">Your Progress</h3>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-3 fw-bold">Performance Reviews</h5>
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">#</th>
-                                                <th scope="col">Date</th>
-                                                <th scope="col">Productivity</th>
-                                                <th scope="col">Punctuality</th>
-                                                <th scope="col">Collaboration</th>
-                                                <th scope="col">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for review in performance_reviews %}
-                                            <tr>
-                                                <th scope="row">{{ forloop.counter }}</th>
-                                                <td>{{ review.date|date:'Y-m-d H:i' }}</td>
-                                                <td>{{ review.productivity_score }}</td>
-                                                <td>{{ review.punctuality_score }}</td>
-                                                <td>{{ review.collaboration_score }}</td>
-                                                <td>
-                                                    <a href="{% url 'intern_performance_details' review.id %}" class="btn btn-primary btn-sm">View Details</a>
-                                                </td>
-                                            </tr>
-                                            {% empty %}
-                                            <tr>
-                                                <td colspan="6">No reviews available.</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold fs-4 mt-5 mb-3">Manager Feedback</h3>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-3 fw-bold">Recent Feedback</h5>
-                                    {% for review in performance_reviews %}
-                                    <p class="mb-2">{{ review.feedback|slice:":100" }}...</p>
-                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#feedbackModal"
-                                        data-feedback="{{ review.feedback }}">View Full Feedback</button>
-                                    <hr>
-                                    {% empty %}
-                                    <p>No feedback available.</p>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold fs-4 mt-5 mb-3">Your Goals</h3>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-3 fw-bold">Assigned Goals</h5>
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">#</th>
-                                                <th scope="col">Title</th>
-                                                <th scope="col">Status</th>
-                                                <th scope="col">Progress</th>
-                                                <th scope="col">Deadline</th>
-                                                <th scope="col">Update Progress</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for goal in goals %}
-                                            <tr>
-                                                <th scope="row">{{ forloop.counter }}</th>
-                                                <td>{{ goal.title }}</td>
-                                                <td>{{ goal.status|title }}</td>
-                                                <td>{{ goal.progress }}%</td>
-                                                <td>{{ goal.deadline|date:'Y-m-d' }}</td>
-                                                <td>
-                                                    <form method="post" action="{% url 'goals' %}">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="goal_id" value="{{ goal.id }}" />
-                                                        <input
-                                                            type="number"
-                                                            name="progress"
-                                                            min="0"
-                                                            max="100"
-                                                            value="{{ goal.progress }}"
-                                                            class="form-control form-control-sm mb-1"
-                                                            required
-                                                        />
-                                                        <textarea
-                                                            name="comments"
-                                                            class="form-control form-control-sm"
-                                                            rows="2"
-                                                            placeholder="Add comments (optional)"
-                                                        ></textarea>
-                                                        <button type="submit" class="btn btn-primary btn-sm mt-1">
-                                                            Update
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                            {% empty %}
-                                            <tr>
-                                                <td colspan="6">No goals assigned.</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <h3 class="fw-bold fs-4 mt-5 mb-3">Self-Assessment</h3>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body py-4">
-                                    <h5 class="mb-3 fw-bold">Add Self-Assessment</h5>
-                                    <form method="post" action="{% url 'Self_Assessment' %}">
-                                        {% csrf_token %}
-                                        <div class="mb-3">
-                                            <textarea
-                                                class="form-control"
-                                                id="selfAssessment"
-                                                name="selfAssessment"
-                                                rows="4"
-                                                placeholder="Write about your achievements, progress, and challenges..."
-                                                required
-                                            ></textarea>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">Submit Update</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">In Progress</h5>
+                    <h2 class="mb-0">{{ in_progress_count }}</h2>
                 </div>
-            </main>
-            <footer class="footer">
-                <div class="container-fluid">
-                    <div class="row align-items-center text-center text-md-start">
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <a href="#" class="footer-brand">Intern Portal</a>
-                        </div>
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <p class="mb-0">© 2025 Intern Portal. All Rights Reserved.</p>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <ul class="list-inline mb-0">
-                                <li class="list-inline-item">
-                                    <a href="#">Contact</a>
-                                </li>
-                                <li class="list-inline-item">
-                                    <a href="#">About Us</a>
-                                </li>
-                                <li class="list-inline-item">
-                                    <a href="#">Terms & Conditions</a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Missed</h5>
+                    <h2 class="mb-0">{{ missed_count }}</h2>
                 </div>
-            </footer>
+            </div>
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script
-        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"
-    ></script>
-    <script src="{% static 'js/script.js' %}"></script>
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.querySelector('.toggle-btn');
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-        });
+    <!-- Overall Progress -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Overall Progress</h4>
+            <div class="progress mb-3" style="height: 25px;">
+                <div class="progress-bar {% if completion_rate == 100 %}bg-success{% elif completion_rate > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                     role="progressbar" 
+                     style="width: {{ completion_rate }}%" 
+                     aria-valuenow="{{ completion_rate }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ completion_rate }}%
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // Modal feedback
-        $('#feedbackModal').on('show.bs.modal', function (event) {
-            const button = $(event.relatedTarget);
-            const feedback = button.data('feedback');
-            const modal = $(this);
-            modal.find('#modalFeedback').text(feedback);
-        });
-    </script>
-</body>
+    <!-- Recent Tasks Section -->
+    <div class="card">
+        <div class="card-body">
+            <h4 class="card-title mb-4">Recent Tasks</h4>
+            {% for task in in_progress_tasks %}
+            <div class="task-item mb-4 p-3 border rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-2">
+                            {{ task.title }}
+                            <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ task.priority|title }}
+                            </span>
+                        </h5>
+                        <p class="text-muted mb-2">{{ task.description|truncatewords:30 }}</p>
+                        <p class="mb-2">
+                            <i class="lni lni-calendar"></i> Deadline: {{ task.deadline|date:"M d, Y H:i" }}
+                        </p>
+                        
+                        <!-- Task Progress -->
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div class="progress-bar {% if task.progress == 100 %}bg-success{% elif task.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ task.progress }}%" 
+                                 aria-valuenow="{{ task.progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ task.progress }}%
+                            </div>
+                        </div>
 
-</html>
+                        <!-- Checkpoints Preview -->
+                        <div class="checkpoints-preview mt-3">
+                            <h6 class="mb-3">Checkpoints ({{ task.checkpoints.count }})</h6>
+                            {% for checkpoint in task.checkpoints.all|slice:":3" %}
+                            <div class="checkpoint-item mb-2 p-2 border rounded {% if checkpoint.is_completed %}bg-light{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ checkpoint.title }}</h6>
+                                        <p class="text-muted mb-1 small">{{ checkpoint.description|truncatewords:20 }}</p>
+                                        {% if checkpoint.is_completed %}
+                                        <small class="text-success">
+                                            <i class="lni lni-checkmark-circle"></i> Completed
+                                            {% if checkpoint.document %}
+                                            <a href="{{ checkpoint.document.url }}" target="_blank" class="ms-2">
+                                                <i class="lni lni-file"></i> View Document
+                                            </a>
+                                            {% endif %}
+                                        </small>
+                                        {% else %}
+                                        <form method="post" action="{% url 'task_detail' task.id %}" enctype="multipart/form-data" class="mt-2">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="update_checkpoint">
+                                            <input type="hidden" name="checkpoint_id" value="{{ checkpoint.id }}">
+                                            <input type="hidden" name="is_completed" value="true">
+                                            
+                                            <div class="mb-2">
+                                                <input type="file" name="document" class="form-control form-control-sm">
+                                                <small class="text-muted">Upload supporting document (optional)</small>
+                                            </div>
+                                            
+                                            <div class="mb-2">
+                                                <textarea name="comment" class="form-control form-control-sm" rows="2" 
+                                                          placeholder="Add completion notes..."></textarea>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="lni lni-checkmark-circle"></i> Mark as Complete
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-info">{{ checkpoint.progress_value }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if task.checkpoints.count > 3 %}
+                            <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                View All Checkpoints
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">
+                <i class="lni lni-information"></i>
+                No tasks in progress at the moment.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            alert.style.display = 'none';
+        });
+    }, 5000);
+
+    // Confirm before submitting checkpoint forms
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (form.querySelector('input[name="is_completed"]')) {
+                if (!confirm('Are you sure you want to mark this checkpoint as complete?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
