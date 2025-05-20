@@ -1,6 +1,7 @@
 {% extends "extend/base.html" %}
 {% load static %}
 
+<<<<<<< Updated upstream
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Header Section -->
@@ -12,6 +13,44 @@
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
                         <i class="lni lni-plus"></i> Create New Task
                     </button>
+=======
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    .stats-card {
+        transition: transform 0.2s;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Quick Actions</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'task_management' %}" class="btn btn-primary">
+                            <i class="fas fa-tasks me-2"></i>Manage Tasks
+                        </a>
+                        <a href="{% url 'users_list' %}" class="btn btn-info">
+                            <i class="fas fa-users me-2"></i>Manage Users
+                        </a>
+                        <a href="{% url 'attendance_list' %}" class="btn btn-success">
+                            <i class="fas fa-calendar-check me-2"></i>View Attendance
+                        </a>
+                    </div>
+>>>>>>> Stashed changes
                 </div>
             </div>
         </div>
@@ -19,6 +58,7 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
+<<<<<<< Updated upstream
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body">
@@ -48,11 +88,63 @@
                 <div class="card-body">
                     <h5 class="card-title">Missed</h5>
                     <h2 class="mb-0">{{ missed_tasks }}</h2>
+=======
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Total Users</h6>
+                            <h2 class="mb-0">{{ total_users }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Total Tasks</h6>
+                            <h2 class="mb-0">{{ total_tasks }}</h2>
+                        </div>
+                        <i class="fas fa-tasks fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Completed Tasks</h6>
+                            <h2 class="mb-0">{{ completed_tasks }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stats-card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Pending Tasks</h6>
+                            <h2 class="mb-0">{{ pending_tasks }}</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+>>>>>>> Stashed changes
                 </div>
             </div>
         </div>
     </div>
 
+<<<<<<< Updated upstream
     <!-- Charts Section -->
     <div class="row mb-4">
         <div class="col-md-6">
@@ -68,11 +160,83 @@
                 <div class="card-body">
                     <h5 class="card-title">Task Priority Distribution</h5>
                     <canvas id="priorityChart"></canvas>
+=======
+    <!-- Task Management Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Task Management</h5>
+                    <a href="{% url 'task_management' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-2"></i>Create New Task
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Deadline</th>
+                                    <th>Progress</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in recent_tasks %}
+                                <tr>
+                                    <td>{{ task.title }}</td>
+                                    <td>{{ task.assigned_to.username }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ task.priority|lower }}">
+                                            {{ task.priority|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.status|lower }}">
+                                            {{ task.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ task.deadline|date:"M d, Y" }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar" role="progressbar" style="width: {{ task.progress }}%"></div>
+                                        </div>
+                                        <small class="text-muted">{{ task.progress }}%</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{% url 'edit_task' task.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteTaskModal{{ task.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No tasks found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'task_management' %}" class="btn btn-outline-primary">View All Tasks</a>
+                    </div>
+>>>>>>> Stashed changes
                 </div>
             </div>
         </div>
     </div>
 
+<<<<<<< Updated upstream
     <!-- Task Management Section -->
     <div class="row">
         <div class="col-12">
@@ -140,12 +304,38 @@
                             </tbody>
                         </table>
                     </div>
+=======
+    <!-- Task Completion Trend -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Task Completion Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="completionTrendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">User Performance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="userPerformanceChart" height="100"></canvas>
+>>>>>>> Stashed changes
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<<<<<<< Updated upstream
 <!-- Create Task Modal -->
 <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -385,5 +575,97 @@ document.getElementById('commentForm').addEventListener('submit', function(e) {
         document.getElementById('commentText').value = '';
     });
 });
+=======
+<!-- Delete Task Modals -->
+{% for task in recent_tasks %}
+<div class="modal fade" id="deleteTaskModal{{ task.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the task "{{ task.title }}"?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{% url 'delete_task' task.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Task Completion Trend Chart
+    const completionTrendCtx = document.getElementById('completionTrendChart').getContext('2d');
+    new Chart(completionTrendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ completion_trend.labels|safe }},
+            datasets: [{
+                label: 'Completed Tasks',
+                data: {{ completion_trend.data|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // User Performance Chart
+    const userPerformanceCtx = document.getElementById('userPerformanceChart').getContext('2d');
+    new Chart(userPerformanceCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ user_performance.labels|safe }},
+            datasets: [{
+                label: 'Completed',
+                data: {{ user_performance.completed|safe }},
+                backgroundColor: 'rgb(75, 192, 192)'
+            }, {
+                label: 'In Progress',
+                data: {{ user_performance.in_progress|safe }},
+                backgroundColor: 'rgb(255, 205, 86)'
+            }, {
+                label: 'Missed',
+                data: {{ user_performance.missed|safe }},
+                backgroundColor: 'rgb(255, 99, 132)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+>>>>>>> Stashed changes
 </script>
 {% endblock %}

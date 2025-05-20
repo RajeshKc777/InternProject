@@ -1,5 +1,6 @@
 from django import forms
-from .models import Goal, TaskComment
+from django.contrib.auth.forms import PasswordChangeForm
+from .models import Goal, TaskComment, CustomUser
 
 class TaskForm(forms.ModelForm):
     class Meta:
@@ -23,4 +24,15 @@ class TaskCommentForm(forms.ModelForm):
         fields = ['comment']
         widgets = {
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Add a comment...'}),
+        }
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'email', 'first_name', 'last_name']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
         }

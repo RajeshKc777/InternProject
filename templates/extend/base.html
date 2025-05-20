@@ -90,10 +90,22 @@
             </div>
             <ul class="sidebar-nav list-unstyled">
                 <li class="sidebar-item">
-                    <a href="{% url 'employer_dashboard' %}" class="sidebar-link">
-                        <i class="lni lni-dashboard"></i>
-                        <span>Dashboard</span>
-                    </a>
+                    {% if user.user_type == 'superadmin' %}
+                        <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
+                            <i class="lni lni-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    {% elif user.user_type == 'employer' %}
+                        <a href="{% url 'employer_dashboard' %}" class="sidebar-link">
+                            <i class="lni lni-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    {% elif user.user_type == 'intern' %}
+                        <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link">
+                            <i class="lni lni-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    {% endif %}
                 </li>
                 <li class="sidebar-item">
                     <a href="{% url 'personal_workspace' %}" class="sidebar-link">
@@ -101,14 +113,28 @@
                         <span>My Workspace</span>
                     </a>
                 </li>
+                {% if user.user_type == 'intern' %}
                 <li class="sidebar-item">
-                    <a href="{% url 'attendance' %}" class="sidebar-link">
+                    <a href="{% url 'goals' %}" class="sidebar-link">
+                        <i class="lni lni-target"></i>
+                        <span>Goals</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'Self_Assessment' %}" class="sidebar-link">
+                        <i class="lni lni-clipboard"></i>
+                        <span>Self-Assessment</span>
+                    </a>
+                </li>
+                {% endif %}
+                <li class="sidebar-item">
+                    <a href="{% url 'attendance_view' %}" class="sidebar-link">
                         <i class="lni lni-calendar"></i>
                         <span>Attendance</span>
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#profileModal">
+                    <a href="{% url 'user_profile' %}" class="sidebar-link">
                         <i class="lni lni-user"></i>
                         <span>Profile</span>
                     </a>

@@ -8,7 +8,6 @@ from Employee_Performance_Review_System import settings
 
 
 class UserTypes(models.TextChoices):
-    EMPLOYEE = 'employee', 'Employee'
     EMPLOYER = 'employer', 'Employer'
     INTERN = 'intern', 'Intern'
     SUPERADMIN = 'superadmin', 'Superadmin'

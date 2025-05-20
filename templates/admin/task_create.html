@@ -2,74 +2,103 @@
 {% load static %}
 {% block content %}
 <div class="container mt-4">
-    <h2>Create Task</h2>
-    <form method="post" enctype="multipart/form-data" novalidate>
-        {% csrf_token %}
-        {{ form.non_field_errors }}
-        <div class="mb-3">
-            {{ form.title.label_tag }}
-            {{ form.title }}
-            {% for error in form.title.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create New Task</h2>
+        <a href="{% url 'tasks_list' %}" class="btn btn-secondary">
+            <i class="lni lni-arrow-left"></i> Back to Tasks
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                            <div class="invalid-feedback">
+                                Please provide a title for the task.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                            <div class="invalid-feedback">
+                                Please provide a description for the task.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="assigned_to" class="form-label">Assign To</label>
+                            <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                <option value="">Select User</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a user to assign the task to.
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="deadline" class="form-label">Deadline</label>
+                                <input type="datetime-local" class="form-control" id="deadline" name="deadline" required>
+                                <div class="invalid-feedback">
+                                    Please set a deadline for the task.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority" name="priority" required>
+                                    <option value="">Select Priority</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Please select a priority level.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="lni lni-save"></i> Create Task
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            {{ form.description.label_tag }}
-            {{ form.description }}
-            {% for error in form.description.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.assigned_to.label_tag }}
-            {{ form.assigned_to }}
-            {% for error in form.assigned_to.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.deadline.label_tag }}
-            {{ form.deadline }}
-            {% for error in form.deadline.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.priority.label_tag }}
-            {{ form.priority }}
-            {% for error in form.priority.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.attachment.label_tag }}
-            {{ form.attachment }}
-            {% for error in form.attachment.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.status.label_tag }}
-            {{ form.status }}
-            {% for error in form.status.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.progress.label_tag }}
-            {{ form.progress }}
-            {% for error in form.progress.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <div class="form-check mb-3">
-            {{ form.completed }}
-            {{ form.completed.label_tag }}
-            {% for error in form.completed.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
-        <button type="submit" class="btn btn-primary">Create Task</button>
-    </form>
+    </div>
 </div>
+
+{% block extra_js %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Set minimum datetime for deadline
+document.getElementById('deadline').min = new Date().toISOString().slice(0, 16);
+</script>
+{% endblock %}
 {% endblock %}
