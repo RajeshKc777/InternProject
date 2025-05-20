@@ -2,22 +2,19 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header Section -->
+<div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">Admin Dashboard</h2>
-                <div>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
-                        <i class="lni lni-plus"></i> Create New Task
-                    </button>
-                </div>
+                <h2 class="mb-0">Task Management</h2>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                    <i class="lni lni-plus"></i> Create New Task
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
+    <!-- Task Statistics -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card bg-primary text-white">
@@ -53,40 +50,16 @@
         </div>
     </div>
 
-    <!-- Charts Section -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Task Status Distribution</h5>
-                    <canvas id="taskStatusChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Task Priority Distribution</h5>
-                    <canvas id="priorityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Task Management Section -->
+    <!-- Task List -->
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Task Management</h5>
-                </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Title</th>
-                                    <th>Assigned To</th>
                                     <th>Priority</th>
                                     <th>Status</th>
                                     <th>Progress</th>
@@ -95,10 +68,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for task in goals %}
+                                {% for task in tasks %}
                                 <tr>
                                     <td>{{ task.title }}</td>
-                                    <td>{{ task.assigned_to.username }}</td>
                                     <td>
                                         <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning{% else %}bg-info{% endif %}">
                                             {{ task.priority|title }}
@@ -134,7 +106,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center">No tasks found</td>
+                                    <td colspan="6" class="text-center">No tasks found</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -168,16 +140,6 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="assigned_to" class="form-label">Assign To</label>
-                                <select class="form-select" id="assigned_to" name="assigned_to" required>
-                                    {% for user in users %}
-                                    <option value="{{ user.id }}">{{ user.username }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
                                 <label for="priority" class="form-label">Priority</label>
                                 <select class="form-select" id="priority" name="priority" required>
                                     <option value="low">Low</option>
@@ -186,20 +148,16 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="deadline" class="form-label">Deadline</label>
                                 <input type="datetime-local" class="form-control" id="deadline" name="deadline" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="tags" class="form-label">Tags (comma-separated)</label>
-                                <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g., project, urgent, meeting">
-                            </div>
-                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags (comma-separated)</label>
+                        <input type="text" class="form-control" id="tags" name="tags" placeholder="e.g., project, urgent, meeting">
                     </div>
                     <div class="mb-3">
                         <label for="attachment" class="form-label">Attachment</label>
@@ -247,75 +205,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Task Status Chart
-const taskStatusData = JSON.parse('{{ task_status_data|escapejs }}');
-const taskStatusCtx = document.getElementById('taskStatusChart').getContext('2d');
-new Chart(taskStatusCtx, {
-    type: 'pie',
-    data: {
-        labels: Object.keys(taskStatusData).map(key => {
-            switch(key) {
-                case 'in_progress': return 'In Progress';
-                case 'achieved': return 'Completed';
-                case 'missed': return 'Missed';
-                default: return key;
-            }
-        }),
-        datasets: [{
-            data: Object.values(taskStatusData),
-            backgroundColor: [
-                'rgba(255, 206, 86, 0.6)',
-                'rgba(75, 192, 192, 0.6)',
-                'rgba(255, 99, 132, 0.6)'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'right'
-            }
-        }
-    }
-});
-
-// Priority Chart
-const priorityData = JSON.parse('{{ priority_data|escapejs }}');
-const priorityCtx = document.getElementById('priorityChart').getContext('2d');
-new Chart(priorityCtx, {
-    type: 'bar',
-    data: {
-        labels: Object.keys(priorityData).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
-        datasets: [{
-            label: 'Tasks by Priority',
-            data: Object.values(priorityData),
-            backgroundColor: [
-                'rgba(54, 162, 235, 0.6)',
-                'rgba(255, 206, 86, 0.6)',
-                'rgba(255, 99, 132, 0.6)'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                precision: 0
-            }
-        }
-    }
-});
-
 function viewTask(taskId) {
+    // Load task details via AJAX
     fetch(`/workspace/task/${taskId}/`)
         .then(response => response.json())
         .then(data => {
@@ -333,6 +225,7 @@ function viewTask(taskId) {
                     </div>
                 </div>
             `;
+            // Load comments
             document.getElementById('taskComments').innerHTML = data.comments.map(comment => `
                 <div class="card mb-2">
                     <div class="card-body">
@@ -341,11 +234,13 @@ function viewTask(taskId) {
                     </div>
                 </div>
             `).join('');
+            // Show modal
             new bootstrap.Modal(document.getElementById('taskDetailModal')).show();
         });
 }
 
 function editTask(taskId) {
+    // Load task edit form via AJAX
     fetch(`/workspace/task/${taskId}/edit/`)
         .then(response => response.text())
         .then(html => {
@@ -381,9 +276,9 @@ document.getElementById('commentForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify({ comment: comment })
     }).then(() => {
-        viewTask(taskId);
+        viewTask(taskId); // Refresh task details
         document.getElementById('commentText').value = '';
     });
 });
 </script>
-{% endblock %}
+{% endblock %} 

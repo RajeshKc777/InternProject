@@ -16,6 +16,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .forms import TaskForm, TaskCommentForm
+from django.db import models
+from django.db.models import Count
+from django.utils.timezone import now, timedelta
 
 # Removed import of User to avoid conflict with CustomUser
 
@@ -183,10 +186,6 @@ def user_register(request):
             return redirect('user_register')
 
     return render(request, 'registration/register.html', {'roles': ['superadmin', 'employer', 'intern', 'employee']})
-import json
-from django.db import models
-from django.db.models import Count
-from django.utils.timezone import now, timedelta
 
 @login_required
 def superadmin_dashboard(request):
@@ -794,13 +793,59 @@ def edit_review(request, review_id):
     # Render the same template with review details
     return render(request, "edit_review.html", {"review": review})
 
+@login_required
 def admin_dashboard(request):
-    # Add admin-specific data queries here
+    if request.user.user_type != UserTypes.ADMIN:
+        return redirect('user_login')
+
+    # Get all users except admin
+    users = CustomUser.objects.exclude(user_type=UserTypes.ADMIN)
+    goals = Goal.objects.all()
+    attendance_records = Attend.objects.filter(datetime__gte=now()-timedelta(days=30))
+    performance_reviews = PerformanceReview.objects.all().order_by('-date')[:10]
+    notifications = Goal.objects.filter(models.Q(deadline__lte=now() + timedelta(days=3)) | models.Q(status='missed'))
+
+    # Get recent activity logs
+    recent_activities = ActivityLog.objects.all().order_by('-timestamp')[:10]
+
+    # Prepare data for charts
+    user_type_counts = users.values('user_type').annotate(count=Count('id'))
+    user_type_data = {ut['user_type']: ut['count'] for ut in user_type_counts}
+
+    task_status_counts = goals.values('status').annotate(count=Count('id'))
+    task_status_data = {ts['status']: ts['count'] for ts in task_status_counts}
+
+    # Get task statistics
+    total_tasks = goals.count()
+    completed_tasks = goals.filter(status='achieved').count()
+    in_progress_tasks = goals.filter(status='in_progress').count()
+    missed_tasks = goals.filter(status='missed').count()
+
+    # Calculate completion rate
+    completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
+    # Get tasks by priority
+    priority_counts = goals.values('priority').annotate(count=Count('id'))
+    priority_data = {p['priority']: p['count'] for p in priority_counts}
+
     context = {
-        'total_users': User.objects.count(),
-        'recent_activities': ActivityLog.objects.all().order_by('-timestamp')[:10]
+        'user_type_data': json.dumps(user_type_data),
+        'task_status_data': json.dumps(task_status_data),
+        'priority_data': json.dumps(priority_data),
+        'performance_reviews': performance_reviews,
+        'notifications': notifications,
+        'users': users,
+        'goals': goals,
+        'attendance_records': attendance_records,
+        'recent_activities': recent_activities,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'in_progress_tasks': in_progress_tasks,
+        'missed_tasks': missed_tasks,
+        'completion_rate': round(completion_rate, 1),
+        'user': request.user
     }
-    return render(request, 'accounts/admin_dashboard.html', context)
+    return render(request, 'admin/admin_dashboard.html', context)
 
 @login_required
 def personal_workspace(request):
@@ -848,3 +893,126 @@ def update_workspace(request):
         return redirect('personal_workspace')
     
     return render(request, 'workspace/update_workspace.html', {'workspace': request.user.workspace})
+
+@login_required
+def task_management(request):
+    workspace = request.user.workspace
+    tasks = workspace.get_tasks()
+    
+    context = {
+        'tasks': tasks,
+        'total_tasks': tasks.count(),
+        'completed_tasks': workspace.get_completed_tasks().count(),
+        'in_progress_tasks': workspace.get_in_progress_tasks().count(),
+        'missed_tasks': workspace.get_missed_tasks().count(),
+    }
+    return render(request, 'workspace/task_management.html', context)
+
+@login_required
+def create_task(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        priority = request.POST.get('priority')
+        deadline = request.POST.get('deadline')
+        tags = request.POST.get('tags')
+        attachment = request.FILES.get('attachment')
+        
+        workspace = request.user.workspace
+        task = Goal.objects.create(
+            title=title,
+            description=description,
+            priority=priority,
+            deadline=deadline,
+            tags=tags,
+            attachment=attachment,
+            status='in_progress',
+            progress=0,
+            assigned_to=request.user,
+            workspace=workspace
+        )
+        
+        messages.success(request, 'Task created successfully!')
+        return redirect('task_management')
+    
+    return redirect('task_management')
+
+@login_required
+def task_detail(request, task_id):
+    task = get_object_or_404(Goal, id=task_id, workspace=request.user.workspace)
+    comments = task.comments.all().order_by('-created_at')
+    
+    if request.method == 'POST':
+        comment_text = request.POST.get('comment')
+        if comment_text:
+            TaskComment.objects.create(
+                goal=task,
+                user=request.user,
+                comment=comment_text
+            )
+            messages.success(request, 'Comment added successfully!')
+        return redirect('task_detail', task_id=task.id)
+    
+    context = {
+        'task': task,
+        'comments': comments,
+    }
+    return render(request, 'workspace/task_detail.html', context)
+
+@login_required
+def edit_task(request, task_id):
+    task = get_object_or_404(Goal, id=task_id, workspace=request.user.workspace)
+    
+    if request.method == 'POST':
+        task.title = request.POST.get('title')
+        task.description = request.POST.get('description')
+        task.priority = request.POST.get('priority')
+        task.deadline = request.POST.get('deadline')
+        task.tags = request.POST.get('tags')
+        
+        if 'attachment' in request.FILES:
+            task.attachment = request.FILES['attachment']
+        
+        task.save()
+        messages.success(request, 'Task updated successfully!')
+        return redirect('task_management')
+    
+    return JsonResponse({
+        'title': task.title,
+        'description': task.description,
+        'priority': task.priority,
+        'deadline': task.deadline.strftime('%Y-%m-%dT%H:%M'),
+        'tags': task.tags,
+    })
+
+@login_required
+def delete_task(request, task_id):
+    task = get_object_or_404(Goal, id=task_id, workspace=request.user.workspace)
+    task.delete()
+    messages.success(request, 'Task deleted successfully!')
+    return redirect('task_management')
+
+@login_required
+def add_comment(request, task_id):
+    task = get_object_or_404(Goal, id=task_id, workspace=request.user.workspace)
+    
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        comment_text = data.get('comment')
+        
+        if comment_text:
+            comment = TaskComment.objects.create(
+                goal=task,
+                user=request.user,
+                comment=comment_text
+            )
+            return JsonResponse({
+                'success': True,
+                'comment': {
+                    'comment': comment.comment,
+                    'user': comment.user.username,
+                    'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M')
+                }
+            })
+    
+    return JsonResponse({'success': False})
