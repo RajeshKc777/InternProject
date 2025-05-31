@@ -1,0 +1,68 @@
+{% extends "extend/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Edit User</h2>
+        <a href="{% url 'superadmin_users_list' %}" class="btn btn-secondary">
+            <i class="lni lni-arrow-left"></i> Back to Users
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                    <small class="text-muted">Username cannot be changed</small>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="user_type" class="form-label">User Type</label>
+                    <select class="form-select" id="user_type" name="user_type" required>
+                        <option value="EMPLOYER" {% if user.user_type == 'EMPLOYER' %}selected{% endif %}>Employer</option>
+                        <option value="INTERN" {% if user.user_type == 'INTERN' %}selected{% endif %}>Intern</option>
+                    </select>
+                    <small class="text-muted">Select between Employer and Intern roles</small>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="lni lni-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.display = 'none';
+        });
+    }, 5000);
+});
+</script>
+{% endblock %} 

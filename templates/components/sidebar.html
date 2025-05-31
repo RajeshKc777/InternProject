@@ -1,0 +1,69 @@
+{% load static %}
+<aside id="sidebar">
+    <div class="d-flex align-items-center p-3">
+        <button class="toggle-btn" type="button">
+            <i class="lni lni-grid-alt"></i>
+        </button>
+        <div class="sidebar-logo ms-2">
+            <a href="#">{{ user.username }} ({{ user.user_type|title }})</a>
+        </div>
+    </div>
+    <ul class="sidebar-nav">
+        <li class="sidebar-item">
+            {% if user.user_type == 'superadmin' %}
+                <a href="{% url 'superadmin_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'superadmin_dashboard' %}active{% endif %}">
+                    <i class="lni lni-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            {% elif user.user_type == 'employer' %}
+                <a href="{% url 'employer_dashboard' %}" class="sidebar-link {% if request.resolver_match.url_name == 'employer_dashboard' %}active{% endif %}">
+                    <i class="lni lni-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            {% elif user.user_type == 'intern' %}
+                <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link {% if request.resolver_match.url_name == 'intern_dashboard' %}active{% endif %}">
+                    <i class="lni lni-home"></i>
+                    <span>Dashboard</span>
+                </a>
+            {% endif %}
+        </li>
+        <li class="sidebar-item">
+            <a href="{% url 'personal_workspace' %}" class="sidebar-link {% if request.resolver_match.url_name == 'personal_workspace' %}active{% endif %}">
+                <i class="lni lni-briefcase"></i>
+                <span>My Workspace</span>
+            </a>
+        </li>
+        {% if user.user_type == 'intern' %}
+        <li class="sidebar-item">
+            <a href="{% url 'goals' %}" class="sidebar-link {% if request.resolver_match.url_name == 'goals' %}active{% endif %}">
+                <i class="lni lni-target"></i>
+                <span>Goals</span>
+            </a>
+        </li>
+        <li class="sidebar-item">
+            <a href="{% url 'Self_Assessment' %}" class="sidebar-link {% if request.resolver_match.url_name == 'Self_Assessment' %}active{% endif %}">
+                <i class="lni lni-clipboard"></i>
+                <span>Self-Assessment</span>
+            </a>
+        </li>
+        {% endif %}
+        <li class="sidebar-item">
+            <a href="{% url 'attendance' %}" class="sidebar-link {% if request.resolver_match.url_name == 'attendance' %}active{% endif %}">
+                <i class="lni lni-calendar"></i>
+                <span>My Attendance</span>
+            </a>
+        </li>
+        <li class="sidebar-item">
+            <a href="{% url 'user_profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}">
+                <i class="lni lni-user"></i>
+                <span>Profile</span>
+            </a>
+        </li>
+        <li class="sidebar-item">
+            <a href="{% url 'logout' %}" class="sidebar-link">
+                <i class="lni lni-exit"></i>
+                <span>Logout</span>
+            </a>
+        </li>
+    </ul>
+</aside> 

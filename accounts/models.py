@@ -157,5 +157,39 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.action} at {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('task_deadline', 'Task Deadline'),
+        ('new_task', 'New Task'),
+        ('new_message', 'New Message'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username} - {self.notification_type} - Read: {self.is_read}"
+
+class TaskCheckpoint(models.Model):
+    task = models.ForeignKey(Goal, on_delete=models.CASCADE, related_name='checkpoints')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    progress_value = models.IntegerField(default=0)  # Percentage value this checkpoint represents
+    is_completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    document = models.FileField(upload_to='task_documents/', null=True, blank=True)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.task.title} - {self.title}"
         
     

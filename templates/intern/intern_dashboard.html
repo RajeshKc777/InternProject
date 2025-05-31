@@ -46,7 +46,7 @@
             <div class="progress mb-3" style="height: 25px;">
                 <div class="progress-bar {% if completion_rate == 100 %}bg-success{% elif completion_rate > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
                      role="progressbar" 
-                     style="width: {{ completion_rate }}%" 
+                     
                      aria-valuenow="{{ completion_rate }}" 
                      aria-valuemin="0" 
                      aria-valuemax="100">
@@ -79,7 +79,7 @@
                         <div class="progress mb-3" style="height: 20px;">
                             <div class="progress-bar {% if task.progress == 100 %}bg-success{% elif task.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
                                  role="progressbar" 
-                                 style="width: {{ task.progress }}%" 
+                                 
                                  aria-valuenow="{{ task.progress }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
@@ -87,48 +87,82 @@
                             </div>
                         </div>
 
+                        {% if task.progress == 100 and not task.completed %}
+                        <div class="text-end">
+                            <a href="{% url 'submit_task' task.id %}" class="btn btn-success">
+                                <i class="lni lni-checkmark-circle"></i> Submit Task
+                            </a>
+                        </div>
+                        {% endif %}
+
                         <!-- Checkpoints Preview -->
                         <div class="checkpoints-preview mt-3">
-                            <h6 class="mb-3">Checkpoints ({{ task.checkpoints.count }})</h6>
+                            <h6 class="mb-3">Task Parts ({{ task.checkpoints.count }})</h6>
                             {% for checkpoint in task.checkpoints.all|slice:":3" %}
-                            <div class="checkpoint-item mb-2 p-2 border rounded {% if checkpoint.is_completed %}bg-light{% endif %}">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1">{{ checkpoint.title }}</h6>
-                                        <p class="text-muted mb-1 small">{{ checkpoint.description|truncatewords:20 }}</p>
+                            <div class="checkpoint-item mb-3 p-3 border rounded {% if checkpoint.is_completed %}bg-light{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-2">{{ checkpoint.title }}</h6>
+                                        <p class="text-muted mb-2">{{ checkpoint.description }}</p>
+                                        
                                         {% if checkpoint.is_completed %}
-                                        <small class="text-success">
-                                            <i class="lni lni-checkmark-circle"></i> Completed
+                                        <div class="completion-details">
+                                            <div class="alert alert-success mb-2">
+                                                <i class="lni lni-checkmark-circle"></i> Completed
+                                                <small class="d-block mt-1">
+                                                    Completed on: {{ checkpoint.completed_at|date:"M d, Y H:i" }}
+                                                </small>
+                                            </div>
+                                            
                                             {% if checkpoint.document %}
-                                            <a href="{{ checkpoint.document.url }}" target="_blank" class="ms-2">
-                                                <i class="lni lni-file"></i> View Document
-                                            </a>
+                                            <div class="mb-2">
+                                                <strong>Uploaded Document:</strong>
+                                                <a href="{{ checkpoint.document.url }}" target="_blank" class="ms-2">
+                                                    <i class="lni lni-file"></i> View Document
+                                                </a>
+                                            </div>
                                             {% endif %}
-                                        </small>
+                                            
+                                            {% if checkpoint.completion_comment %}
+                                            <div class="mb-2">
+                                                <strong>Completion Notes:</strong>
+                                                <p class="mb-0">{{ checkpoint.completion_comment }}</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
                                         {% else %}
-                                        <form method="post" action="{% url 'task_detail' task.id %}" enctype="multipart/form-data" class="mt-2">
+                                        <form method="post" action="{% url 'task_detail' task.id %}" enctype="multipart/form-data" class="completion-form">
                                             {% csrf_token %}
                                             <input type="hidden" name="action" value="update_checkpoint">
                                             <input type="hidden" name="checkpoint_id" value="{{ checkpoint.id }}">
-                                            <input type="hidden" name="is_completed" value="true">
                                             
-                                            <div class="mb-2">
-                                                <input type="file" name="document" class="form-control form-control-sm">
-                                                <small class="text-muted">Upload supporting document (optional)</small>
+                                            <div class="completion-status mb-3">
+                                                <label class="form-label">Mark as Complete:</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="is_completed" value="true" required>
+                                                    <label class="form-check-label">Yes, I have completed this part</label>
+                                                </div>
                                             </div>
                                             
-                                            <div class="mb-2">
-                                                <textarea name="comment" class="form-control form-control-sm" rows="2" 
-                                                          placeholder="Add completion notes..."></textarea>
+                                            <div class="document-upload mb-3">
+                                                <label class="form-label">Upload Supporting Document:</label>
+                                                <input type="file" name="document" class="form-control">
+                                                <small class="text-muted">Upload any relevant files that prove completion</small>
                                             </div>
                                             
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="lni lni-checkmark-circle"></i> Mark as Complete
+                                            <div class="completion-notes mb-3">
+                                                <label class="form-label">Completion Notes:</label>
+                                                <textarea name="comment" class="form-control" rows="3" 
+                                                          placeholder="Explain what you've done to complete this part..."></textarea>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="lni lni-checkmark-circle"></i> Submit Completion
                                             </button>
                                         </form>
                                         {% endif %}
                                     </div>
-                                    <div class="text-end">
+                                    <div class="text-end ms-3">
                                         <span class="badge bg-info">{{ checkpoint.progress_value }}%</span>
                                     </div>
                                 </div>
@@ -136,8 +170,8 @@
                             {% endfor %}
                             
                             {% if task.checkpoints.count > 3 %}
-                            <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary mt-2">
-                                View All Checkpoints
+                            <a href="{% url 'task_detail' task.id %}" class="btn btn-outline-primary mt-2">
+                                View All Parts
                             </a>
                             {% endif %}
                         </div>
@@ -165,12 +199,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 5000);
 
     // Confirm before submitting checkpoint forms
-    document.querySelectorAll('form').forEach(function(form) {
+    document.querySelectorAll('.completion-form').forEach(function(form) {
         form.addEventListener('submit', function(e) {
-            if (form.querySelector('input[name="is_completed"]')) {
-                if (!confirm('Are you sure you want to mark this checkpoint as complete?')) {
-                    e.preventDefault();
-                }
+            if (!confirm('Are you sure you want to mark this part as complete? This action cannot be undone.')) {
+                e.preventDefault();
             }
         });
     });

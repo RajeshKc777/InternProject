@@ -1,0 +1,206 @@
+{% extends 'extend/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Task Details Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h2 class="card-title mb-3">{{ task.title }}</h2>
+                            <p class="text-muted mb-2">
+                                <i class="lni lni-calendar"></i> Deadline: {{ task.deadline|date:"M d, Y H:i" }}
+                            </p>
+                            <p class="text-muted mb-2">
+                                <i class="lni lni-flag"></i> Priority: 
+                                <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning{% else %}bg-info{% endif %}">
+                                    {{ task.priority|title }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if task.status == 'completed' %}bg-success{% elif task.status == 'in_progress' %}bg-primary{% else %}bg-danger{% endif %}">
+                                {{ task.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+                    <h5>Description</h5>
+                    <p class="card-text">{{ task.description }}</p>
+                </div>
+            </div>
+
+            <!-- Progress Overview Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Overall Progress</h4>
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar {% if task.progress == 100 %}bg-success{% elif task.progress > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ task.progress }}%" 
+                             aria-valuenow="{{ task.progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ task.progress }}%
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">
+                        {{ task.checkpoints.count }} checkpoints • 
+                        {{ task.checkpoints.filter.is_completed.count }} completed
+                    </p>
+                </div>
+            </div>
+
+            <!-- Checkpoints Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Task Checkpoints</h4>
+                    {% for checkpoint in task.checkpoints.all %}
+                    <div class="checkpoint-item mb-4 p-3 border rounded {% if checkpoint.is_completed %}bg-light{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-2">
+                                    {{ checkpoint.title }}
+                                    <span class="badge bg-info ms-2">{{ checkpoint.progress_value }}%</span>
+                                </h5>
+                                <p class="text-muted mb-2">{{ checkpoint.description }}</p>
+                                
+                                {% if checkpoint.is_completed %}
+                                <div class="completed-details mt-3">
+                                    <p class="mb-2">
+                                        <i class="lni lni-checkmark-circle text-success"></i>
+                                        Completed on {{ checkpoint.completed_at|date:"M d, Y H:i" }}
+                                    </p>
+                                    {% if checkpoint.document %}
+                                    <p class="mb-2">
+                                        <i class="lni lni-file"></i>
+                                        <a href="{{ checkpoint.document.url }}" target="_blank" class="text-decoration-none">
+                                            View Document
+                                        </a>
+                                    </p>
+                                    {% endif %}
+                                    {% if checkpoint.comment %}
+                                    <div class="alert alert-info mb-0">
+                                        <i class="lni lni-comments"></i>
+                                        {{ checkpoint.comment }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <form method="post" enctype="multipart/form-data" class="checkpoint-form mt-3" id="form_{{ checkpoint.id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="update_checkpoint">
+                                    <input type="hidden" name="checkpoint_id" value="{{ checkpoint.id }}">
+                                    <input type="hidden" name="is_completed" value="true">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="lni lni-upload"></i> Upload Document (Optional)
+                                        </label>
+                                        <input type="file" name="document" class="form-control">
+                                        <small class="text-muted">Upload any relevant files to support your completion</small>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="lni lni-comments"></i> Completion Notes
+                                        </label>
+                                        <textarea name="comment" class="form-control" rows="3" 
+                                                  placeholder="Describe what you've completed and any important details..."></textarea>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="lni lni-checkmark-circle"></i> Mark as Complete
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="alert alert-info">
+                        <i class="lni lni-information"></i>
+                        No checkpoints have been defined for this task yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Task Comments Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Comments</h4>
+                    <div class="comments-list mb-3">
+                        {% for comment in task.comments.all %}
+                        <div class="comment-item mb-3 p-2 border-bottom">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ comment.user.username }}</h6>
+                                    <p class="mb-1">{{ comment.comment }}</p>
+                                    <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No comments yet.</p>
+                        {% endfor %}
+                    </div>
+
+                    <form method="post" class="comment-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_comment">
+                        <div class="mb-3">
+                            <textarea name="comment" class="form-control" rows="3" 
+                                      placeholder="Add a comment..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="lni lni-comments"></i> Add Comment
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Task Attachments Card -->
+            {% if task.attachment %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Attachments</h4>
+                    <div class="attachment-item">
+                        <a href="{{ task.attachment.url }}" target="_blank" class="text-decoration-none">
+                            <i class="lni lni-file"></i> {{ task.attachment.name }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-hide alerts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            alert.style.display = 'none';
+        });
+    }, 5000);
+
+    // Handle checkpoint form submissions
+    document.querySelectorAll('.checkpoint-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to mark this checkpoint as complete?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

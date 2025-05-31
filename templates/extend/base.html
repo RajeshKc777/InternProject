@@ -8,145 +8,10 @@
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <style>
-        body {
-            background: #f4f7fc;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .wrapper {
-            display: flex;
-            min-height: 100vh;
-        }
-        #sidebar {
-            background: linear-gradient(180deg, #667eea, #764ba2);
-            color: white;
-            width: 250px;
-            transition: width 0.3s ease;
-        }
-        .sidebar-logo a {
-            color: white;
-            font-weight: bold;
-            text-decoration: none;
-        }
-        .sidebar-link {
-            color: white;
-            transition: background 0.3s ease;
-            border-radius: 8px;
-            margin: 5px 10px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-        .sidebar-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-        .sidebar-link i {
-            margin-right: 10px;
-        }
-        .toggle-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-        }
-        .main {
-            flex-grow: 1;
-            background: #fff;
-        }
-        .navbar {
-            background: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #667eea;
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-    </style>
 </head>
 <body>
     <div class="wrapper">
-        <!-- Sidebar -->
-        <aside id="sidebar">
-            <div class="d-flex align-items-center p-3">
-                <button class="toggle-btn" type="button">
-                    <i class="lni lni-grid-alt"></i>
-                </button>
-                <div class="sidebar-logo ms-2">
-                    <a href="#">{{ user.username }} ({{ user.user_type|title }})</a>
-                </div>
-            </div>
-            <ul class="sidebar-nav list-unstyled">
-                <li class="sidebar-item">
-                    {% if user.user_type == 'superadmin' %}
-                        <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
-                            <i class="lni lni-dashboard"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    {% elif user.user_type == 'employer' %}
-                        <a href="{% url 'employer_dashboard' %}" class="sidebar-link">
-                            <i class="lni lni-dashboard"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    {% elif user.user_type == 'intern' %}
-                        <a href="{% url 'intern_dashboard' user.id %}" class="sidebar-link">
-                            <i class="lni lni-dashboard"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    {% endif %}
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'personal_workspace' %}" class="sidebar-link">
-                        <i class="lni lni-briefcase"></i>
-                        <span>My Workspace</span>
-                    </a>
-                </li>
-                {% if user.user_type == 'intern' %}
-                <li class="sidebar-item">
-                    <a href="{% url 'goals' %}" class="sidebar-link">
-                        <i class="lni lni-target"></i>
-                        <span>Goals</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'Self_Assessment' %}" class="sidebar-link">
-                        <i class="lni lni-clipboard"></i>
-                        <span>Self-Assessment</span>
-                    </a>
-                </li>
-                {% endif %}
-                <li class="sidebar-item">
-                    <a href="{% url 'attendance_view' %}" class="sidebar-link">
-                        <i class="lni lni-calendar"></i>
-                        <span>Attendance</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'user_profile' %}" class="sidebar-link">
-                        <i class="lni lni-user"></i>
-                        <span>Profile</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="{% url 'logout' %}" class="sidebar-link">
-                        <i class="lni lni-exit"></i>
-                        <span>Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </aside>
+        {% include 'components/sidebar.html' %}
 
         <!-- Main Content -->
         <div class="main">
@@ -154,6 +19,18 @@
             <nav class="navbar navbar-expand px-4 py-3">
                 <div class="navbar-collapse collapse">
                     <ul class="navbar-nav ms-auto">
+                        <!-- Notification Bell -->
+                        <li class="nav-item dropdown">
+                            <a href="#" id="notificationDropdown" data-bs-toggle="dropdown" class="nav-icon pe-md-3 position-relative">
+                                <i class="lni lni-alarm"></i>
+                                <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end rounded" aria-labelledby="notificationDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;" id="notificationList">
+                                <li class="dropdown-header">Notifications</li>
+                                <li><hr class="dropdown-divider"></li>
+                                <!-- Notifications will be appended here -->
+                            </ul>
+                        </li>
                         <li class="nav-item dropdown">
                             <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
                                 <img src="{% static 'img/user.png' %}" class="avatar img-fluid" alt="User Avatar">
@@ -196,13 +73,57 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.querySelector('.toggle-btn');
-        toggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-        });
-    </script>
+    <script src="{% static 'js/script.js' %}"></script>
     {% block extra_js %}{% endblock %}
+
+    <script>
+        (function() {
+            const notificationCountElem = document.getElementById('notificationCount');
+            const notificationListElem = document.getElementById('notificationList');
+
+            function updateNotificationCount(count) {
+                if (count > 0) {
+                    notificationCountElem.style.display = 'inline-block';
+                    notificationCountElem.textContent = count;
+                } else {
+                    notificationCountElem.style.display = 'none';
+                }
+            }
+
+            function addNotification(notification) {
+                const li = document.createElement('li');
+                li.classList.add('dropdown-item');
+                li.textContent = notification.message;
+                notificationListElem.appendChild(li);
+            }
+
+            // Open WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const wsUrl = `${protocol}://${window.location.host}/ws/notifications/`;
+            const socket = new WebSocket(wsUrl);
+
+            socket.onopen = function(e) {
+                console.log('Notification WebSocket connected.');
+            };
+
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                if (data.notification) {
+                    addNotification(data.notification);
+                    // Update count
+                    let currentCount = parseInt(notificationCountElem.textContent) || 0;
+                    updateNotificationCount(currentCount + 1);
+                }
+            };
+
+            socket.onclose = function(e) {
+                console.log('Notification WebSocket disconnected.');
+            };
+
+            socket.onerror = function(e) {
+                console.error('Notification WebSocket error:', e);
+            };
+        })();
+    </script>
 </body>
 </html>

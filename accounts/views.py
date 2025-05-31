@@ -94,6 +94,16 @@ def send_message(request):
             message=message_text
         )
         chat_message.save()
+
+        # Create notification for receiver
+        from .models import Notification
+        notification_message = f"New message from {request.user.username}"
+        Notification.objects.create(
+            user=receiver,
+            notification_type='new_message',
+            message=notification_message
+        )
+
         return JsonResponse({'status': 'success', 'message': 'Message sent.'})
     return JsonResponse({'status': 'fail', 'message': 'Invalid request.'})
 
@@ -114,28 +124,81 @@ def task_create(request):
 @login_required
 def task_detail(request, task_id):
     task = get_object_or_404(Goal, id=task_id)
+    
+    # Check if user has permission to view this task
+    if request.user.user_type == UserTypes.SUPERADMIN:
+        # Superadmin can view any task
+        pass
+    elif task.assigned_to != request.user:
+        messages.error(request, "You don't have permission to view this task.")
+        return redirect('user_login')
+    
     comments = task.comments.all().order_by('-created_at')
-
+    checkpoints = task.checkpoints.all().order_by('created_at')
+    
     if request.method == 'POST':
-        comment_form = TaskCommentForm(request.POST)
-        if comment_form.is_valid():
-            comment = comment_form.save(commit=False)
-            comment.user = request.user
-            comment.goal = task
-            comment.save()
-            messages.success(request, 'Comment added successfully.')
-            return redirect('task_detail', task_id=task.id)
+        action = request.POST.get('action')
+            
+            # Handle document upload
+        if 'document' in request.FILES:
+                checkpoint.document = request.FILES['document']
+                messages.success(request, 'Document uploaded successfully!')
+            
+            # Update progress status
+                progress_status = request.POST.get('progress_status')
+        if progress_status == 'completed':
+                checkpoint.is_completed = True
+                checkpoint.completed_at = timezone.now()
+                checkpoint.completion_comment = request.POST.get('completion_notes', '')
+        elif progress_status == 'in_progress':
+                checkpoint.is_completed = False
+                checkpoint.completed_at = None
+                checkpoint.completion_comment = ''
+        else:  # not_started
+                checkpoint.is_completed = False
+                checkpoint.completed_at = None
+                checkpoint.completion_comment = ''
+            
+                checkpoint.save()
+            
+            # Update task progress
+        completed_checkpoints = task.checkpoints.filter(is_completed=True)
+        total_progress = sum(cp.progress_value for cp in completed_checkpoints)
+        
+        task.progress = total_progress
+            
+            # Update task status
+        if total_progress == 100:
+                task.status = 'completed'
+                task.completed = True
+        elif total_progress > 0:
+                task.status = 'in_progress'
         else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        comment_form = TaskCommentForm()
-
+                task.status = 'pending'
+            
+        task.save()
+            
+            # Log the activity
+        ActivityLog.objects.create(
+                user=request.user,
+                action=f'Updated checkpoint: {checkpoint.title} - {progress_status}'
+            )
+            
+        messages.success(request, 'Progress updated successfully!')
+            
+        
+            
+        return redirect('task_detail', task_id=task.id)
+    
+    # Determine which template to use based on user type
+    template = 'workspace/user_task_detail.html' if request.user.user_type != UserTypes.SUPERADMIN else 'workspace/task_detail.html'
+    
     context = {
         'task': task,
         'comments': comments,
-        'comment_form': comment_form,
+        'checkpoints': checkpoints,
     }
-    return render(request, 'admin/task_detail.html', context)
+    return render(request, template, context)
 
 @login_required
 def user_list_by_role(request, role):
@@ -232,7 +295,7 @@ def superadmin_dashboard(request):
         'recent_activities': recent_activities,
         'user': request.user
     }
-    return render(request, "superadmin/superadmin_dashboard.html", context)
+    return render(request, "admin/admin_dashboard.html", context)
 
 @login_required
 def superadmin_users_list(request):
@@ -248,33 +311,72 @@ def superadmin_users_list(request):
 @login_required
 def superadmin_user_add(request):
     if request.user.user_type != UserTypes.SUPERADMIN:
-        return redirect('user_login')
-
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('home')
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
-        user_type = request.POST.get('user_type')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
-
+        user_type = request.POST.get('user_type')
+        
+        # Validate passwords match
         if password != password2:
-            messages.error(request, "Passwords do not match.")
+            messages.error(request, 'Passwords do not match.')
             return redirect('superadmin_user_add')
-
+        
+        # Check if username or email already exists
         if CustomUser.objects.filter(username=username).exists():
-            messages.error(request, "Username already exists.")
+            messages.error(request, 'Username already exists.')
             return redirect('superadmin_user_add')
-
-        user = CustomUser.objects.create_user(username=username, email=email, password=password)
-        user.user_type = user_type
-        user.save()
-        messages.success(request, "User added successfully.")
-        return redirect('superadmin_users_list')
-
-    context = {
-        'user_types': UserTypes.choices,
-    }
-    return render(request, "superadmin/user_add.html", context)
+        if CustomUser.objects.filter(email=email).exists():
+            messages.error(request, 'Email already exists.')
+            return redirect('superadmin_user_add')
+        
+        try:
+            # Create user with proper role
+            user = CustomUser.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                user_type=user_type,
+                is_active=True  # Ensure user is active
+            )
+            
+            # Set additional permissions based on role
+            if user_type == UserTypes.EMPLOYER:
+                user.is_staff = True
+                user.save()
+            
+            # Create workspace for the user
+            workspace = Workspace.objects.create(
+                name=f"{username}'s Workspace",
+                owner=user
+            )
+            user.workspace = workspace
+            user.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                action=f'Created new {user_type} user: {username}',
+                details=f'Created user account for {username} with role {user_type}'
+            )
+            
+            messages.success(request, f'User {username} created successfully.')
+            return redirect('superadmin_users_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating user: {str(e)}')
+            return redirect('superadmin_user_add')
+    
+    # Get user types for the form
+    user_types = [(UserTypes.EMPLOYER, 'Employer'), (UserTypes.INTERN, 'Intern')]
+    
+    return render(request, 'superadmin/user_add.html', {
+        'user_types': user_types
+    })
 
 @login_required
 def users_list(request):
@@ -292,9 +394,41 @@ def superadmin_user_delete(request, user_id):
     if request.user.user_type != UserTypes.SUPERADMIN:
         return redirect('user_login')
 
-    user = get_object_or_404(CustomUser, id=user_id)
-    user.delete()
-    messages.success(request, "User deleted successfully.")
+    try:
+        user = get_object_or_404(CustomUser, id=user_id)
+        
+        # Prevent deleting the last superadmin
+        if user.user_type == UserTypes.SUPERADMIN and CustomUser.objects.filter(user_type=UserTypes.SUPERADMIN).count() <= 1:
+            messages.error(request, "Cannot delete the last superadmin user.")
+            return redirect('superadmin_users_list')
+        
+        # Store username for the success message
+        username = user.username
+        
+        # Delete related data
+        # Delete user's tasks
+        Goal.objects.filter(assigned_to=user).delete()
+        
+        # Delete user's performance reviews
+        PerformanceReview.objects.filter(user=user).delete()
+        
+        # Delete user's attendance records
+        Attend.objects.filter(attender=user).delete()
+        
+        # Delete user's chat messages
+        ChatMessage.objects.filter(sender=user).delete()
+        ChatMessage.objects.filter(receiver=user).delete()
+        
+        # Delete user's activity logs
+        ActivityLog.objects.filter(user=user).delete()
+        
+        # Delete the user
+        user.delete()
+        
+        messages.success(request, f"User '{username}' and all associated data have been deleted successfully.")
+    except Exception as e:
+        messages.error(request, f"Error deleting user: {str(e)}")
+    
     return redirect('superadmin_users_list')
 
 @login_required
@@ -506,92 +640,124 @@ def employer_dashboard(request):
     if user.user_type != UserTypes.EMPLOYER:
         return redirect('user_login')  # Ensure only employers access this dashboard
     
-    # Get or create user's workspace
-    workspace, created = Workspace.objects.get_or_create(user=user)
+    # Get all tasks assigned to the user
+    tasks = Goal.objects.filter(assigned_to=user).order_by('-created_at')
     
-    # Get tasks for different statuses
-    in_progress_tasks = workspace.get_in_progress_tasks()
-    completed_tasks = workspace.get_completed_tasks()
-    missed_tasks = workspace.get_missed_tasks()
+    # Calculate task statistics
+    total_tasks = tasks.count()
+    completed_tasks = tasks.filter(status='completed')
+    in_progress_tasks = tasks.filter(status='in_progress')
+    missed_tasks = tasks.filter(status='missed')
     
-    # Get task statistics
-    total_tasks = workspace.get_tasks().count()
     completed_count = completed_tasks.count()
     in_progress_count = in_progress_tasks.count()
     missed_count = missed_tasks.count()
     
     # Calculate completion rate
-    completion_rate = (completed_count / total_tasks * 100) if total_tasks > 0 else 0
+    completion_rate = 0
+    if total_tasks > 0:
+        completion_rate = int((completed_count / total_tasks) * 100)
     
-    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
-    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
-    goals_completed = goals.filter(completed=True).count()
-    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    # Get recent in-progress tasks with their checkpoints, comments, and documents
+    recent_tasks = in_progress_tasks.prefetch_related(
+        'checkpoints',
+        'checkpoints__comments',
+        'checkpoints__document',
+        'comments'
+    ).order_by('-created_at')[:5]
     
-    data = {
+    # For each task, calculate its progress based on completed checkpoints
+    for task in recent_tasks:
+        completed_checkpoints = task.checkpoints.filter(is_completed=True)
+        total_progress = sum(cp.progress_value for cp in completed_checkpoints)
+        task.progress = total_progress
+        
+        # Update task status if needed
+        if total_progress == 100 and task.status != 'completed':
+            task.status = 'completed'
+            task.save()
+        elif total_progress > 0 and task.status == 'pending':
+            task.status = 'in_progress'
+            task.save()
+    
+    # Get recent activity logs for the user
+    recent_activities = ActivityLog.objects.filter(
+        user=user
+    ).order_by('-timestamp')[:10]
+    
+    # Create a dictionary to store activities for each task
+    task_activities = {}
+    for activity in recent_activities:
+        # Extract task ID from activity action if it contains task information
+        if 'task' in activity.action.lower():
+            # Try to find task ID in the action string
+            task_id = None
+            if 'task id:' in activity.action.lower():
+                try:
+                    task_id = int(activity.action.split('task id:')[1].split()[0])
+                except (IndexError, ValueError):
+                    pass
+            
+            if task_id:
+                if task_id not in task_activities:
+                    task_activities[task_id] = []
+                task_activities[task_id].append(activity)
+    
+    # Add activities to each task
+    for task in recent_tasks:
+        task.activities = task_activities.get(task.id, [])
+    
+    context = {
         'user': user,
-        'workspace': workspace,
-        'in_progress_tasks': in_progress_tasks,
-        'completed_tasks': completed_tasks,
-        'missed_tasks': missed_tasks,
         'total_tasks': total_tasks,
         'completed_count': completed_count,
         'in_progress_count': in_progress_count,
         'missed_count': missed_count,
-        'completion_rate': round(completion_rate, 1),
-        'performance_reviews': performance_reviews,
-        'goals': goals,
-        'goals_completed': goals_completed,
-        'attendance_records': attendance_records,
+        'completion_rate': completion_rate,
+        'in_progress_tasks': recent_tasks,
     }
-    return render(request, "employer/employer_dashboard.html", data)
+    
+    return render(request, 'employer/employer_dashboard.html', context)
 
 
 #intern
 def intern_dashboard(request, user_id):
-    user = get_object_or_404(CustomUser, id=user_id, user_type=UserTypes.INTERN)
-    if request.user != user:
-        return redirect('user_login')  # Ensure only the intern can access their dashboard
+    user = get_object_or_404(CustomUser, id=user_id)
+    if request.user != user and not request.user.is_superuser:
+        return redirect('login')
+
+    # Get all tasks assigned to the user
+    tasks = Goal.objects.filter(assigned_to=user).order_by('-created_at')
     
-    # Get or create user's workspace
-    workspace, created = Workspace.objects.get_or_create(user=user)
+    # Calculate task statistics
+    total_tasks = tasks.count()
+    completed_tasks = tasks.filter(status='completed')
+    in_progress_tasks = tasks.filter(status='in_progress')
+    missed_tasks = tasks.filter(status='missed')
     
-    # Get tasks for different statuses
-    in_progress_tasks = workspace.get_in_progress_tasks()
-    completed_tasks = workspace.get_completed_tasks()
-    missed_tasks = workspace.get_missed_tasks()
-    
-    # Get task statistics
-    total_tasks = workspace.get_tasks().count()
     completed_count = completed_tasks.count()
     in_progress_count = in_progress_tasks.count()
     missed_count = missed_tasks.count()
     
     # Calculate completion rate
-    completion_rate = (completed_count / total_tasks * 100) if total_tasks > 0 else 0
+    completion_rate = 0
+    if total_tasks > 0:
+        completion_rate = int((completed_count / total_tasks) * 100)
     
-    performance_reviews = PerformanceReview.objects.filter(user=user).order_by('-date')[:3]
-    goals = Goal.objects.filter(assigned_to=user).order_by('-created_at')
-    goals_completed = goals.filter(completed=True).count()
-    attendance_records = Attend.objects.filter(attender=user).order_by('-datetime')
+    # Get recent in-progress tasks with their checkpoints
+    recent_tasks = in_progress_tasks.prefetch_related('checkpoints')[:5]
     
-    data = {
+    context = {
         'user': user,
-        'workspace': workspace,
-        'in_progress_tasks': in_progress_tasks,
-        'completed_tasks': completed_tasks,
-        'missed_tasks': missed_tasks,
         'total_tasks': total_tasks,
         'completed_count': completed_count,
         'in_progress_count': in_progress_count,
         'missed_count': missed_count,
-        'completion_rate': round(completion_rate, 1),
-        'performance_reviews': performance_reviews,
-        'goals': goals,
-        'goals_completed': goals_completed,
-        'attendance_records': attendance_records,
+        'completion_rate': completion_rate,
+        'in_progress_tasks': recent_tasks,
     }
-    return render(request, "intern/intern_dashboard.html", data)
+    
+    return render(request, 'intern/intern_dashboard.html', context)
 
 #View performance details for intern
 def intern_performance_details(request, review_id):
@@ -668,31 +834,68 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 def assign_goals(request):
-    users = CustomUser.objects.filter(user_type__in=[UserTypes.INTERN, UserTypes.EMPLOYER])  # Adjust as needed
+    users = CustomUser.objects.filter(user_type__in=[UserTypes.INTERN, UserTypes.EMPLOYER])
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
         deadline = request.POST.get('deadline')
         assigned_to_id = request.POST.get('assigned_to')
-        assigned_to = CustomUser.objects.get(id=assigned_to_id)
-
-        # Create and save the goal
-        goal = Goal.objects.create(
-            title=title,
-            description=description,
-            deadline=deadline,
-            assigned_to=assigned_to
-        )
-        goal.save()
-
-        # Send email notification to assigned user
-        if assigned_to.email:
-            subject = 'New Task Assigned'
-            message = f'Hello {assigned_to.username},\n\nYou have been assigned a new task: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
-            from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
-            recipient_list = [assigned_to.email]
-            send_mail(subject, message, from_email, recipient_list)
-
+        
+        try:
+            # Check if a similar task already exists
+            existing_task = Goal.objects.filter(
+                title=title,
+                assigned_to_id=assigned_to_id,
+                created_at__gte=timezone.now() - timedelta(minutes=5)
+            ).first()
+            
+            if existing_task:
+                messages.error(request, 'A similar task was recently created for this user.')
+                return redirect('assign_goals')
+            
+            assigned_to = CustomUser.objects.get(
+                id=assigned_to_id,
+                user_type__in=[UserTypes.INTERN, UserTypes.EMPLOYER],
+                is_active=True
+            )
+            
+            # Get or create workspace for the assigned user
+            workspace, created = Workspace.objects.get_or_create(
+                user=assigned_to,
+                defaults={'name': f"{assigned_to.username}'s Workspace"}
+            )
+            
+            # Create and save the goal
+            goal = Goal.objects.create(
+                title=title,
+                description=description,
+                deadline=deadline,
+                assigned_to=assigned_to,
+                workspace=workspace,
+                status='in_progress',
+                progress=0
+            )
+            
+            # Send email notification to assigned user
+            if assigned_to.email:
+                subject = 'New Task Assigned'
+                message = f'Hello {assigned_to.username},\n\nYou have been assigned a new task: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
+                from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
+                recipient_list = [assigned_to.email]
+                send_mail(subject, message, from_email, recipient_list)
+            
+            messages.success(request, 'Task assigned successfully!')
+            return redirect('assign_goals')
+            
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Selected user does not exist or is not active.')
+        except Exception as e:
+            messages.error(request, f'Error assigning task: {str(e)}')
+    
+    context = {
+        'users': users
+    }
+    return render(request, 'manager/Work_desc.html', context)
 
 @login_required
 def goals_history(request):
@@ -947,20 +1150,51 @@ def update_workspace(request):
 
 @login_required
 def task_management(request):
-    workspace = request.user.workspace
-    tasks = workspace.get_tasks()
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+
+    # Get all tasks
+    tasks = Goal.objects.all().order_by('deadline')
+    
+    # Get all registered users (EMPLOYER and INTERN) for task assignment
+    users = CustomUser.objects.filter(
+        user_type__in=[UserTypes.EMPLOYER, UserTypes.INTERN],
+        is_active=True
+    ).select_related('workspace').order_by('user_type', 'username')
+    
+    # Apply filters if any
+    status = request.GET.get('status')
+    priority = request.GET.get('priority')
+    assigned_to = request.GET.get('assigned_to')
+    
+    if status:
+        tasks = tasks.filter(status=status)
+    if priority:
+        tasks = tasks.filter(priority=priority)
+    if assigned_to:
+        tasks = tasks.filter(assigned_to_id=assigned_to)
+    
+    # Get task statistics
+    total_tasks = tasks.count()
+    completed_tasks = tasks.filter(status='achieved').count()
+    in_progress_tasks = tasks.filter(status='in_progress').count()
+    missed_tasks = tasks.filter(status='missed').count()
     
     context = {
         'tasks': tasks,
-        'total_tasks': tasks.count(),
-        'completed_tasks': workspace.get_completed_tasks().count(),
-        'in_progress_tasks': workspace.get_in_progress_tasks().count(),
-        'missed_tasks': workspace.get_missed_tasks().count(),
+        'users': users,
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'in_progress_tasks': in_progress_tasks,
+        'missed_tasks': missed_tasks,
     }
-    return render(request, 'workspace/task_management.html', context)
+    return render(request, 'admin/task_management.html', context)
 
 @login_required
 def create_task(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        return redirect('user_login')
+        
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
@@ -968,47 +1202,76 @@ def create_task(request):
         deadline = request.POST.get('deadline')
         tags = request.POST.get('tags')
         attachment = request.FILES.get('attachment')
+        assigned_to_id = request.POST.get('assigned_to')
+        user_role = request.POST.get('user_role')
         
-        workspace = request.user.workspace
-        task = Goal.objects.create(
-            title=title,
-            description=description,
-            priority=priority,
-            deadline=deadline,
-            tags=tags,
-            attachment=attachment,
-            status='in_progress',
-            progress=0,
-            assigned_to=request.user,
-            workspace=workspace
-        )
-        
-        messages.success(request, 'Task created successfully!')
-        return redirect('task_management')
-    
-    return redirect('task_management')
-
-@login_required
-def task_detail(request, task_id):
-    task = get_object_or_404(Goal, id=task_id, workspace=request.user.workspace)
-    comments = task.comments.all().order_by('-created_at')
-    
-    if request.method == 'POST':
-        comment_text = request.POST.get('comment')
-        if comment_text:
-            TaskComment.objects.create(
-                goal=task,
-                user=request.user,
-                comment=comment_text
+        try:
+            # Check if a similar task already exists
+            existing_task = Goal.objects.filter(
+                title=title,
+                assigned_to_id=assigned_to_id,
+                created_at__gte=timezone.now() - timedelta(minutes=5)
+            ).first()
+            
+            if existing_task:
+                messages.error(request, 'A similar task was recently created for this user.')
+                return redirect('task_management')
+            
+            assigned_to = CustomUser.objects.get(
+                id=assigned_to_id,
+                user_type__in=[UserTypes.EMPLOYER, UserTypes.INTERN],
+                is_active=True
             )
-            messages.success(request, 'Comment added successfully!')
-        return redirect('task_detail', task_id=task.id)
-    
-    context = {
-        'task': task,
-        'comments': comments,
-    }
-    return render(request, 'workspace/task_detail.html', context)
+            
+            # Verify that the assigned user matches the selected role
+            if assigned_to.user_type != user_role:
+                messages.error(request, 'Selected user does not match the chosen role.')
+                return redirect('task_management')
+            
+            # Get or create workspace for the assigned user
+            workspace, created = Workspace.objects.get_or_create(
+                user=assigned_to,
+                defaults={'name': f"{assigned_to.username}'s Workspace"}
+            )
+            
+            # Create the task
+            task = Goal.objects.create(
+                title=title,
+                description=description,
+                priority=priority,
+                deadline=deadline,
+                tags=tags,
+                attachment=attachment,
+                status='in_progress',
+                progress=0,
+                assigned_to=assigned_to,
+                workspace=workspace
+            )
+            
+            # Send email notification
+            if assigned_to.email:
+                subject = 'New Task Assigned'
+                message = f'Hello {assigned_to.username},\n\nYou have been assigned a new task: {title}.\n\nDescription: {description}\nDeadline: {deadline}\n\nPlease check your dashboard for more details.'
+                from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'no-reply@example.com'
+                recipient_list = [assigned_to.email]
+                send_mail(subject, message, from_email, recipient_list)
+
+            # Create notification for assigned user
+            from .models import Notification
+            notification_message = f"You have been assigned a new task: {title}"
+            Notification.objects.create(
+                user=assigned_to,
+                notification_type='new_task',
+                message=notification_message
+            )
+            
+            messages.success(request, 'Task created successfully!')
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Selected user does not exist or is not active.')
+        except Exception as e:
+            messages.error(request, f'Error creating task: {str(e)}')
+            
+    return redirect('task_management')
 
 @login_required
 def edit_task(request, task_id):
@@ -1067,3 +1330,287 @@ def add_comment(request, task_id):
             })
     
     return JsonResponse({'success': False})
+
+@login_required
+def task_analytics(request):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        messages.error(request, "You don't have permission to view this page.")
+        return redirect('user_login')
+
+    # Get all tasks
+    all_tasks = Goal.objects.all()
+    
+    # Task status distribution
+    status_counts = all_tasks.values('status').annotate(count=Count('id'))
+    status_data = {
+        'labels': [item['status'].title() for item in status_counts],
+        'data': [item['count'] for item in status_counts]
+    }
+    
+    # Task completion over time (last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    daily_completion = all_tasks.filter(
+        status='completed',
+        updated_at__gte=thirty_days_ago
+    ).extra(
+        select={'day': 'date(updated_at)'}
+    ).values('day').annotate(count=Count('id')).order_by('day')
+    
+    completion_data = {
+        'labels': [item['day'] for item in daily_completion],
+        'data': [item['count'] for item in daily_completion]
+    }
+    
+    # User-wise task distribution
+    user_tasks = all_tasks.values('assigned_to__username').annotate(
+        total=Count('id'),
+        completed=Count('id', filter=models.Q(status='completed')),
+        in_progress=Count('id', filter=models.Q(status='in_progress')),
+        pending=Count('id', filter=models.Q(status='pending'))
+    )
+    
+    user_data = {
+        'labels': [item['assigned_to__username'] for item in user_tasks],
+        'datasets': [
+            {
+                'label': 'Completed',
+                'data': [item['completed'] for item in user_tasks]
+            },
+            {
+                'label': 'In Progress',
+                'data': [item['in_progress'] for item in user_tasks]
+            },
+            {
+                'label': 'Pending',
+                'data': [item['pending'] for item in user_tasks]
+            }
+        ]
+    }
+    
+    # Calculate overall completion rate
+    total_tasks = all_tasks.count()
+    completed_tasks = all_tasks.filter(status='completed').count()
+    completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    
+    # Get recent task activity
+    recent_activities = ActivityLog.objects.filter(
+        activity_type__in=['task_created', 'task_updated', 'task_completed']
+    ).order_by('-timestamp')[:10]
+    
+    context = {
+        'status_data': json.dumps(status_data),
+        'completion_data': json.dumps(completion_data),
+        'user_data': json.dumps(user_data),
+        'completion_rate': round(completion_rate, 1),
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'recent_activities': recent_activities
+    }
+    
+    return render(request, 'admin/task_analytics.html', context)
+
+@login_required
+def update_task_status(request, task_id):
+    if request.method == 'POST':
+        try:
+            task = get_object_or_404(Goal, id=task_id)
+            new_status = request.POST.get('status')
+            new_progress = request.POST.get('progress')
+            
+            # Validate status
+            valid_statuses = ['pending', 'in_progress', 'completed', 'missed']
+            if new_status not in valid_statuses:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid status value'
+                })
+            
+            # Validate progress
+            try:
+                progress = int(new_progress) if new_progress else task.progress
+                if not 0 <= progress <= 100:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Progress must be between 0 and 100'
+                    })
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid progress value'
+                })
+            
+            # Update task
+            task.status = new_status
+            task.progress = progress
+            if new_status == 'completed':
+                task.completed = True
+            task.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=request.user,
+                activity_type='task_updated',
+                description=f'Updated task "{task.title}" status to {new_status} with {progress}% progress'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Task updated successfully',
+                'task': {
+                    'id': task.id,
+                    'status': task.status,
+                    'progress': task.progress,
+                    'completed': task.completed
+                }
+            })
+            
+        except Goal.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Task not found'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })
+
+@login_required
+def manage_checkpoints(request, task_id):
+    if request.user.user_type != UserTypes.SUPERADMIN:
+        messages.error(request, "You don't have permission to manage checkpoints.")
+        return redirect('task_detail', task_id=task_id)
+    
+    task = get_object_or_404(Goal, id=task_id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add_checkpoint':
+            title = request.POST.get('title')
+            description = request.POST.get('description')
+            progress_value = request.POST.get('progress_value')
+            
+            if title and description and progress_value:
+                try:
+                    progress_value = int(progress_value)
+                    if 0 <= progress_value <= 100:
+                        TaskCheckpoint.objects.create(
+                            task=task,
+                            title=title,
+                            description=description,
+                            progress_value=progress_value
+                        )
+                        messages.success(request, 'Checkpoint added successfully!')
+                    else:
+                        messages.error(request, 'Progress value must be between 0 and 100.')
+                except ValueError:
+                    messages.error(request, 'Invalid progress value.')
+            else:
+                messages.error(request, 'All fields are required.')
+                
+        elif action == 'delete_checkpoint':
+            checkpoint_id = request.POST.get('checkpoint_id')
+            checkpoint = get_object_or_404(TaskCheckpoint, id=checkpoint_id, task=task)
+            checkpoint.delete()
+            messages.success(request, 'Checkpoint deleted successfully!')
+            
+        elif action == 'edit_checkpoint':
+            checkpoint_id = request.POST.get('checkpoint_id')
+            checkpoint = get_object_or_404(TaskCheckpoint, id=checkpoint_id, task=task)
+            
+            checkpoint.title = request.POST.get('title')
+            checkpoint.description = request.POST.get('description')
+            progress_value = request.POST.get('progress_value')
+            
+            try:
+                progress_value = int(progress_value)
+                if 0 <= progress_value <= 100:
+                    checkpoint.progress_value = progress_value
+                    checkpoint.save()
+                    messages.success(request, 'Checkpoint updated successfully!')
+                else:
+                    messages.error(request, 'Progress value must be between 0 and 100.')
+            except ValueError:
+                messages.error(request, 'Invalid progress value.')
+        
+        return redirect('manage_checkpoints', task_id=task.id)
+    
+    context = {
+        'task': task,
+        'checkpoints': task.checkpoints.all().order_by('created_at')
+    }
+    return render(request, 'workspace/manage_checkpoints.html', context)
+
+@login_required
+def submit_task(request, task_id):
+    task = get_object_or_404(Goal, id=task_id)
+    
+    # Check if user has permission to submit this task
+    if task.assigned_to != request.user:
+        messages.error(request, "You don't have permission to submit this task.")
+        return redirect('user_login')
+    
+    if request.method == 'POST':
+        # Get form data
+        completion_notes = request.POST.get('completion_notes')
+        supporting_document = request.FILES.get('supporting_document')
+        
+        # Update task status
+        task.status = 'completed'
+        task.progress = 100
+        task.completed = True
+        task.completed_at = timezone.now()
+        
+        # Save completion notes and document
+        if completion_notes:
+            task.description += f"\n\nCompletion Notes: {completion_notes}"
+        if supporting_document:
+            task.attachment = supporting_document
+        
+        task.save()
+        
+        # Log the activity
+        ActivityLog.objects.create(
+            user=request.user,
+            action=f'Submitted task: {task.title}',
+            details=f'Task completed and submitted with notes: {completion_notes[:100]}...'
+        )
+        
+        # Send email notification to superadmin
+        try:
+            superadmins = CustomUser.objects.filter(user_type=UserTypes.SUPERADMIN)
+            for admin in superadmins:
+                if admin.email:
+                    subject = f'Task Completed: {task.title}'
+                    message = f"""
+                    Task '{task.title}' has been completed and submitted by {request.user.get_full_name() or request.user.username}.
+                    
+                    Completion Notes: {completion_notes}
+                    
+                    Please review the submission at your earliest convenience.
+                    """
+                    from_email = settings.DEFAULT_FROM_EMAIL
+                    recipient_list = [admin.email]
+                    send_mail(subject, message, from_email, recipient_list)
+        except Exception as e:
+            # Log the error but don't stop the submission process
+            print(f"Error sending email notification: {str(e)}")
+        
+        messages.success(request, "Task submitted successfully!")
+        
+        # Redirect based on user type
+        if request.user.user_type == UserTypes.INTERN:
+            return redirect('intern_dashboard', user_id=request.user.id)
+        else:
+            return redirect('employer_dashboard')
+    
+    context = {
+        'task': task,
+    }
+    return render(request, 'workspace/submit_task.html', context)

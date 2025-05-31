@@ -35,13 +35,14 @@ body {
 }
 
 #sidebar {
-    width: 70px;
-    min-width: 70px;
+    width: 260px;
+    min-width: 260px;
     z-index: 1000;
     transition: all .25s ease-in-out;
-    background-color: #0e2238;
+    background: linear-gradient(180deg, #2c3e50, #1a252f);
     display: flex;
     flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 #sidebar.expand {
@@ -49,11 +50,23 @@ body {
     min-width: 260px;
 }
 
+#sidebar:not(.expand) {
+    width: 70px;
+    min-width: 70px;
+}
+
 .toggle-btn {
     background-color: transparent;
     cursor: pointer;
     border: 0;
-    padding: 1rem 1.5rem;
+    padding: 1rem;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
 }
 
 .toggle-btn i {
@@ -63,12 +76,92 @@ body {
 
 .sidebar-logo {
     margin: auto 0;
+    padding: 1rem;
 }
 
 .sidebar-logo a {
     color: #FFF;
     font-size: 1.15rem;
     font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-nav {
+    padding: 1rem 0;
+    flex: 1 1 auto;
+}
+
+.sidebar-item {
+    position: relative;
+    margin: 0.5rem 0;
+}
+
+.sidebar-link {
+    padding: 0.75rem 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    gap: 0.5rem;
+}
+
+.sidebar-link i {
+    font-size: 1.4rem;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-link span {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    display: block;
+    line-height: 1.2;
+}
+
+#sidebar:not(.expand) .sidebar-link {
+    padding: 0.75rem 0.5rem;
+}
+
+#sidebar:not(.expand) .sidebar-link span {
+    display: block;
+    font-size: 0.7rem;
+}
+
+#sidebar.expand .sidebar-link {
+    flex-direction: row;
+    text-align: left;
+    padding: 0.75rem 1.5rem;
+    gap: 1rem;
+}
+
+#sidebar.expand .sidebar-link i {
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+}
+
+#sidebar.expand .sidebar-link span {
+    font-size: 0.9rem;
+}
+
+a.sidebar-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-left: 3px solid #3498db;
+}
+
+a.sidebar-link.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-left: 3px solid #3498db;
 }
 
 #sidebar:not(.expand) .sidebar-logo,
@@ -85,74 +178,9 @@ body {
     0% {
         opacity: 0;
     }
-
     100% {
         opacity: 1;
     }
-}
-
-.sidebar-nav {
-    padding: 2rem 0;
-    flex: 1 1 auto;
-}
-
-a.sidebar-link {
-    padding: .625rem 1.625rem;
-    color: #FFF;
-    display: block;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    border-left: 3px solid transparent;
-}
-
-.sidebar-link i,
-.dropdown-item i {
-    font-size: 1.1rem;
-    margin-right: .75rem;
-}
-
-a.sidebar-link:hover {
-    background-color: rgba(255, 255, 255, .075);
-    border-left: 3px solid #3b7ddd;
-}
-
-.sidebar-item {
-    position: relative;
-}
-
-#sidebar:not(.expand) .sidebar-item .sidebar-dropdown {
-    position: absolute;
-    top: 0;
-    left: 70px;
-    background-color: #0e2238;
-    padding: 0;
-    min-width: 15rem;
-    display: none;
-}
-
-#sidebar:not(.expand) .sidebar-item:hover .has-dropdown+.sidebar-dropdown {
-    display: block;
-    max-height: 15em;
-    width: 100%;
-    opacity: 1;
-}
-
-#sidebar.expand .sidebar-link[data-bs-toggle="collapse"]::after {
-    border: solid;
-    border-width: 0 .075rem .075rem 0;
-    content: "";
-    display: inline-block;
-    padding: 2px;
-    position: absolute;
-    right: 1.5rem;
-    top: 1.4rem;
-    transform: rotate(-135deg);
-    transition: all .2s ease-out;
-}
-
-#sidebar.expand .sidebar-link[data-bs-toggle="collapse"].collapsed::after {
-    transform: rotate(45deg);
-    transition: all .2s ease-out;
 }
 
 .navbar {
@@ -168,8 +196,6 @@ a.sidebar-link:hover {
     height: 40px;
     width: 40px;
 }
-
-
 
 @media (min-width: 768px) {
 

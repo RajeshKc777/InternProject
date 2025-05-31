@@ -4,92 +4,45 @@
 {% block title %}Task Management{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Task Management Header -->
+<div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Task Management</h2>
+        <h2>Task Management</h2>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
-            <i class="fas fa-plus me-2"></i>Create New Task
+            <i class="lni lni-plus"></i> Create New Task
         </button>
     </div>
 
-    <!-- Task Statistics -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card bg-primary text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1">Total Tasks</h6>
-                            <h2 class="mb-0">{{ total_tasks }}</h2>
-                        </div>
-                        <i class="fas fa-tasks fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card bg-success text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1">Completed</h6>
-                            <h2 class="mb-0">{{ completed_tasks }}</h2>
-                        </div>
-                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card bg-warning text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1">In Progress</h6>
-                            <h2 class="mb-0">{{ in_progress_tasks }}</h2>
-                        </div>
-                        <i class="fas fa-clock fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card bg-danger text-white h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-uppercase mb-1">Overdue</h6>
-                            <h2 class="mb-0">{{ overdue_tasks }}</h2>
-                        </div>
-                        <i class="fas fa-exclamation-circle fa-2x opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
     <!-- Task Filters -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="get" class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">All Status</option>
-                        <option value="pending" {% if filters.status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="in_progress" {% if filters.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                        <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Completed</option>
-                        <option value="overdue" {% if filters.status == 'overdue' %}selected{% endif %}>Overdue</option>
+                        <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="achieved" {% if request.GET.status == 'achieved' %}selected{% endif %}>Completed</option>
+                        <option value="missed" {% if request.GET.status == 'missed' %}selected{% endif %}>Missed</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Priority</label>
                     <select name="priority" class="form-select">
                         <option value="">All Priorities</option>
-                        <option value="high" {% if filters.priority == 'high' %}selected{% endif %}>High</option>
-                        <option value="medium" {% if filters.priority == 'medium' %}selected{% endif %}>Medium</option>
-                        <option value="low" {% if filters.priority == 'low' %}selected{% endif %}>Low</option>
+                        <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -97,25 +50,21 @@
                     <select name="assigned_to" class="form-select">
                         <option value="">All Users</option>
                         {% for user in users %}
-                        <option value="{{ user.id }}" {% if filters.assigned_to == user.id|stringformat:"i" %}selected{% endif %}>
+                        <option value="{{ user.id }}" {% if request.GET.assigned_to == user.id|stringformat:"i" %}selected{% endif %}>
                             {{ user.username }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Deadline</label>
-                    <input type="date" name="deadline" class="form-control" value="{{ filters.deadline }}">
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
-                    <a href="{% url 'task_management' %}" class="btn btn-secondary">Clear Filters</a>
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary d-block w-100">Apply Filters</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Tasks Table -->
+    <!-- Tasks List -->
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
@@ -124,10 +73,10 @@
                         <tr>
                             <th>Title</th>
                             <th>Assigned To</th>
-                            <th>Priority</th>
                             <th>Status</th>
-                            <th>Deadline</th>
+                            <th>Priority</th>
                             <th>Progress</th>
+                            <th>Deadline</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -141,31 +90,42 @@
                             </td>
                             <td>{{ task.assigned_to.username }}</td>
                             <td>
-                                <span class="badge bg-{{ task.priority|lower }}">
+                                <span class="badge {% if task.status == 'achieved' %}bg-success{% elif task.status == 'in_progress' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ task.status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if task.priority == 'high' %}bg-danger{% elif task.priority == 'medium' %}bg-warning{% else %}bg-info{% endif %}">
                                     {{ task.priority|title }}
                                 </span>
                             </td>
                             <td>
-                                <span class="badge bg-{{ task.status|lower }}">
-                                    {{ task.status|title }}
-                                </span>
-                            </td>
-                            <td>{{ task.deadline|date:"M d, Y" }}</td>
-                            <td>
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar" role="progressbar" style="width: {{ task.progress }}%"></div>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if task.progress == 100 %}bg-success{% elif task.progress > 50 %}bg-info{% else %}bg-warning{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ task.progress }}%;" 
+                                         aria-valuenow="{{ task.progress }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ task.progress }}%
+                                    </div>
                                 </div>
-                                <small class="text-muted">{{ task.progress }}%</small>
                             </td>
+                            <td>{{ task.deadline|date:"M d, Y H:i" }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                            data-bs-toggle="modal" data-bs-target="#editTaskModal{{ task.id }}">
-                                        <i class="fas fa-edit"></i>
+                                    <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="lni lni-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editTaskModal{{ task.id }}">
+                                        <i class="lni lni-pencil"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger"
-                                            data-bs-toggle="modal" data-bs-target="#deleteTaskModal{{ task.id }}">
-                                        <i class="fas fa-trash"></i>
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteTaskModal{{ task.id }}">
+                                        <i class="lni lni-trash-can"></i>
                                     </button>
                                 </div>
                             </td>
@@ -183,43 +143,63 @@
 </div>
 
 <!-- Create Task Modal -->
-<div class="modal fade" id="createTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" action="{% url 'create_task' %}">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'create_task' %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Create New Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Title</label>
-                        <input type="text" name="title" class="form-control" required>
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Assigned To</label>
-                        <select name="assigned_to" class="form-select" required>
+                        <label for="user_role" class="form-label">User Role</label>
+                        <select class="form-select" id="user_role" name="user_role" required onchange="filterUsers()">
+                            <option value="">Select Role</option>
+                            <option value="employer">Employer</option>
+                            <option value="intern">Intern</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assign To</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to" required>
+                            <option value="">Select User</option>
                             {% for user in users %}
-                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            <option value="{{ user.id }}" data-role="{{ user.user_type }}">
+                                {{ user.username }} ({{ user.get_user_type_display }})
+                            </option>
                             {% endfor %}
                         </select>
+                        <small class="text-muted" id="userSelectHelp">Please select a role first to see available users</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Priority</label>
-                        <select name="priority" class="form-select" required>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
+                        <label for="priority" class="form-label">Priority</label>
+                        <select class="form-select" id="priority" name="priority" required>
                             <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Deadline</label>
-                        <input type="datetime-local" name="deadline" class="form-control" required>
+                        <label for="deadline" class="form-label">Deadline</label>
+                        <input type="datetime-local" class="form-control" id="deadline" name="deadline" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="tags" name="tags" placeholder="Comma-separated tags">
+                    </div>
+                    <div class="mb-3">
+                        <label for="attachment" class="form-label">Attachment</label>
+                        <input type="file" class="form-control" id="attachment" name="attachment">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -236,12 +216,12 @@
 <div class="modal fade" id="editTaskModal{{ task.id }}" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{% url 'edit_task' task.id %}">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'edit_task' task.id %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
@@ -255,7 +235,7 @@
                         <label class="form-label">Assigned To</label>
                         <select name="assigned_to" class="form-select" required>
                             {% for user in users %}
-                            <option value="{{ user.id }}" {% if user.id == task.assigned_to.id %}selected{% endif %}>
+                            <option value="{{ user.id }}" {% if task.assigned_to.id == user.id %}selected{% endif %}>
                                 {{ user.username }}
                             </option>
                             {% endfor %}
@@ -264,26 +244,37 @@
                     <div class="mb-3">
                         <label class="form-label">Priority</label>
                         <select name="priority" class="form-select" required>
-                            <option value="high" {% if task.priority == 'high' %}selected{% endif %}>High</option>
-                            <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Medium</option>
                             <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if task.priority == 'high' %}selected{% endif %}>High</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>
                         <select name="status" class="form-select" required>
-                            <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
                             <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="achieved" {% if task.status == 'achieved' %}selected{% endif %}>Completed</option>
+                            <option value="missed" {% if task.status == 'missed' %}selected{% endif %}>Missed</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Progress</label>
-                        <input type="number" name="progress" class="form-control" min="0" max="100" value="{{ task.progress }}" required>
+                        <input type="number" name="progress" class="form-control" value="{{ task.progress }}" min="0" max="100" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Deadline</label>
                         <input type="datetime-local" name="deadline" class="form-control" value="{{ task.deadline|date:'Y-m-d\TH:i' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tags</label>
+                        <input type="text" name="tags" class="form-control" value="{{ task.tags }}" placeholder="Comma-separated tags">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Attachment</label>
+                        <input type="file" name="attachment" class="form-control">
+                        {% if task.attachment %}
+                        <small class="text-muted">Current: {{ task.attachment.name }}</small>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -305,12 +296,13 @@
             </div>
             <div class="modal-body">
                 <p>Are you sure you want to delete the task "{{ task.title }}"?</p>
+                <p class="text-danger">This action cannot be undone.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" action="{% url 'delete_task' task.id %}" class="d-inline">
+                <form method="post" action="{% url 'delete_task' task.id %}" style="display: inline;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-danger">Delete Task</button>
                 </form>
             </div>
         </div>
@@ -321,20 +313,48 @@
 
 {% block extra_js %}
 <script>
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+function filterUsers() {
+    const roleSelect = document.getElementById('user_role');
+    const userSelect = document.getElementById('assigned_to');
+    const userSelectHelp = document.getElementById('userSelectHelp');
+    const selectedRole = roleSelect.value;
+    
+    // Reset user selection
+    userSelect.value = '';
+    
+    // Show/hide users based on selected role
+    Array.from(userSelect.options).forEach(option => {
+        if (option.value === '') return; // Skip the placeholder option
+        
+        if (option.dataset.role === selectedRole) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
     });
+    
+    // Update help text
+    if (selectedRole) {
+        const visibleUsers = Array.from(userSelect.options).filter(opt => 
+            opt.value !== '' && opt.dataset.role === selectedRole
+        );
+        
+        if (visibleUsers.length > 0) {
+            userSelectHelp.textContent = `Select a ${selectedRole} to assign the task to`;
+            userSelect.disabled = false;
+        } else {
+            userSelectHelp.textContent = `No ${selectedRole}s available`;
+            userSelect.disabled = true;
+        }
+    } else {
+        userSelectHelp.textContent = 'Please select a role first to see available users';
+        userSelect.disabled = true;
+    }
+}
 
-    // Auto-hide alerts after 5 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                alert.style.display = 'none';
-            });
-        }, 5000);
-    });
+// Initialize the form when the modal is shown
+document.getElementById('createTaskModal').addEventListener('show.bs.modal', function () {
+    filterUsers();
+});
 </script>
 {% endblock %} 
