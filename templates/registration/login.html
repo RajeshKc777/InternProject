@@ -9,9 +9,9 @@
     <!-- Custom CSS - Assuming you have a main styles file now -->
     <link rel="stylesheet" href="../../static/css/style.css">
     <style>
-        /* Additional specific styles for the login page if needed, but try to use the main style.css */
+        /* Updated styles for blue color theme on login page */
         body {
-            background-color: var(--color-background); /* Use color variable from style.css */
+            background-color: #e3f2fd; /* Light blue background */
             min-height: 100vh;
             display: flex;
         }
@@ -21,12 +21,24 @@
             transition: border-color 0.3s ease;
         }
         .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
+            border-color: #2196f3; /* Blue focus border */
+            box-shadow: 0 0 5px rgba(33, 150, 243, 0.5);
         }
         h2 {
-            color: #333;
+            color: #0d47a1; /* Dark blue heading */
             font-weight: 700;
+        }
+        .btn-primary {
+            background-color: #2196f3;
+            border-color: #2196f3;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1976d2;
+            border-color: #1976d2;
+        }
+        .text-primary {
+            color: #2196f3 !important;
         }
     </style>
 </head>
